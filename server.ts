@@ -501,7 +501,6 @@ app.get("/api/health", (req, res) => {
           let rawPlugZmw = typeof v.price === 'number' ? (v.price > 100000 ? v.price / 100 : v.price) : parseFloat(v.price);
           const margin = getProfitMarginZMW({ name: item.title, brand, price: rawPlugZmw });
           let vPrice = Math.round(rawPlugZmw) + margin; // Plug ZMW price + exact profit margin
-          if (item.title.toLowerCase().includes('earpods (3.5mm)')) vPrice = 1;
           if (vPrice < basePrice) basePrice = vPrice;
           
           let color = null;
