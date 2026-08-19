@@ -1,0 +1,222 @@
+{
+  "id": 7674274480281,
+  "title": "iPad 10.9\" (10th Gen, 2022) 64GB - Blue (Wi-Fi + Cellular)",
+  "handle": "ipad-2022-10th-gen-10-9-64gb-silver-wifi-cellular",
+  "description": "<p>The only difference between our plug refurbished iPad 2022 (10th Gen) and a brand new one is the price.</p>\n<p>Our iPad 2022 (10th Gen) is up to 40% more affordable and is backed by our 12-Month Plug Warranty.</p>\n<p>To ensure our products meet our incredibly high-performance standards, we’ve developed a proprietary 90+ point functionality evaluation, deep cleaning, and sanitization process. Specialized technicians at our company’s headquarters hand test each device, and only products that pass our rigorous testing receive plug’s Certified Pre-Owned status and are sold.</p>",
+  "published_at": "2024-07-15T15:53:18-05:00",
+  "created_at": "2023-06-06T16:29:56-05:00",
+  "vendor": "Apple",
+  "type": "Tablet",
+  "tags": [
+    "Apple",
+    "Apple iPad Series",
+    "iPad (10th Generation)",
+    "iPad 10th - 10.9\" - 2022 - A2757 - WC"
+  ],
+  "price": 28999,
+  "price_min": 28999,
+  "price_max": 30999,
+  "available": true,
+  "price_varies": true,
+  "compare_at_price": 59999,
+  "compare_at_price_min": 59999,
+  "compare_at_price_max": 59999,
+  "compare_at_price_varies": false,
+  "variants": [
+    {
+      "id": 43199120801945,
+      "title": "Blue / 64GB / Cellular + Wifi / Good",
+      "option1": "Blue",
+      "option2": "64GB",
+      "option3": "Cellular + Wifi",
+      "sku": "TBAP-IPA10-10922-6416-C1WC",
+      "requires_shipping": true,
+      "taxable": true,
+      "featured_image": null,
+      "available": false,
+      "name": "iPad 10.9\" (10th Gen, 2022) 64GB - Blue (Wi-Fi + Cellular) - Blue / 64GB / Cellular + Wifi / Good",
+      "public_title": "Blue / 64GB / Cellular + Wifi / Good",
+      "options": [
+        "Blue",
+        "64GB",
+        "Cellular + Wifi",
+        "Good"
+      ],
+      "price": 28999,
+      "weight": 680,
+      "compare_at_price": 59999,
+      "inventory_management": "shopify",
+      "barcode": null,
+      "quantity_rule": {
+        "min": 1,
+        "max": null,
+        "increment": 1
+      },
+      "quantity_price_breaks": [],
+      "requires_selling_plan": false,
+      "selling_plan_allocations": []
+    },
+    {
+      "id": 43199120834713,
+      "title": "Blue / 64GB / Cellular + Wifi / Great",
+      "option1": "Blue",
+      "option2": "64GB",
+      "option3": "Cellular + Wifi",
+      "sku": "TBAP-IPA10-10922-6416-B1WC",
+      "requires_shipping": true,
+      "taxable": true,
+      "featured_image": null,
+      "available": true,
+      "name": "iPad 10.9\" (10th Gen, 2022) 64GB - Blue (Wi-Fi + Cellular) - Blue / 64GB / Cellular + Wifi / Great",
+      "public_title": "Blue / 64GB / Cellular + Wifi / Great",
+      "options": [
+        "Blue",
+        "64GB",
+        "Cellular + Wifi",
+        "Great"
+      ],
+      "price": 29999,
+      "weight": 680,
+      "compare_at_price": 59999,
+      "inventory_management": "shopify",
+      "barcode": null,
+      "quantity_rule": {
+        "min": 1,
+        "max": null,
+        "increment": 1
+      },
+      "quantity_price_breaks": [],
+      "requires_selling_plan": false,
+      "selling_plan_allocations": []
+    },
+    {
+      "id": 43199120867481,
+      "title": "Blue / 64GB / Cellular + Wifi / Excellent",
+      "option1": "Blue",
+      "option2": "64GB",
+      "option3": "Cellular + Wifi",
+      "sku": "TBAP-IPA10-10922-6416-A1WC",
+      "requires_shipping": true,
+      "taxable": true,
+      "featured_image": null,
+      "available": false,
+      "name": "iPad 10.9\" (10th Gen, 2022) 64GB - Blue (Wi-Fi + Cellular) - Blue / 64GB / Cellular + Wifi / Excellent",
+      "public_title": "Blue / 64GB / Cellular + Wifi / Excellent",
+      "options": [
+        "Blue",
+        "64GB",
+        "Cellular + Wifi",
+        "Excellent"
+      ],
+      "price": 30999,
+      "weight": 680,
+      "compare_at_price": 59999,
+      "inventory_management": "shopify",
+      "barcode": null,
+      "quantity_rule": {
+        "min": 1,
+        "max": null,
+        "increment": 1
+      },
+      "quantity_price_breaks": [],
+      "requires_selling_plan": false,
+      "selling_plan_allocations": []
+    }
+  ],
+  "images": [
+    "//cdn.shopify.com/s/files/1/0575/3628/2777/files/iPad10thGenBlueWiFi_Cellular_Dual_1.png?v=1686087014",
+    "//cdn.shopify.com/s/files/1/0575/3628/2777/files/iPad10thGenBlueWiFi_Cellular_Back_Side_1.png?v=1686087015",
+    "//cdn.shopify.com/s/files/1/0575/3628/2777/files/iPad10thGenBlueWiFi_Cellular_Camera_1.png?v=1686087017"
+  ],
+  "featured_image": "//cdn.shopify.com/s/files/1/0575/3628/2777/files/iPad10thGenBlueWiFi_Cellular_Dual_1.png?v=1686087014",
+  "options": [
+    {
+      "name": "Color",
+      "position": 1,
+      "values": [
+        "Yellow",
+        "Silver",
+        "Pink",
+        "Blue"
+      ]
+    },
+    {
+      "name": "Storage",
+      "position": 2,
+      "values": [
+        "64GB",
+        "256GB"
+      ]
+    },
+    {
+      "name": "Connectivity",
+      "position": 3,
+      "values": [
+        "Wifi",
+        "Cellular + Wifi"
+      ]
+    },
+    {
+      "name": "Condition",
+      "position": 4,
+      "values": [
+        "Excellent",
+        "Good",
+        "Great"
+      ]
+    }
+  ],
+  "url": "/products/ipad-2022-10th-gen-10-9-64gb-silver-wifi-cellular",
+  "media": [
+    {
+      "alt": null,
+      "id": 29176949145753,
+      "position": 1,
+      "preview_image": {
+        "aspect_ratio": 1,
+        "height": 500,
+        "width": 500,
+        "src": "https://cdn.shopify.com/s/files/1/0575/3628/2777/files/iPad10thGenBlueWiFi_Cellular_Dual_1.png?v=1686087014"
+      },
+      "aspect_ratio": 1,
+      "height": 500,
+      "media_type": "image",
+      "src": "https://cdn.shopify.com/s/files/1/0575/3628/2777/files/iPad10thGenBlueWiFi_Cellular_Dual_1.png?v=1686087014",
+      "width": 500
+    },
+    {
+      "alt": null,
+      "id": 29176949276825,
+      "position": 2,
+      "preview_image": {
+        "aspect_ratio": 1,
+        "height": 500,
+        "width": 500,
+        "src": "https://cdn.shopify.com/s/files/1/0575/3628/2777/files/iPad10thGenBlueWiFi_Cellular_Back_Side_1.png?v=1686087015"
+      },
+      "aspect_ratio": 1,
+      "height": 500,
+      "media_type": "image",
+      "src": "https://cdn.shopify.com/s/files/1/0575/3628/2777/files/iPad10thGenBlueWiFi_Cellular_Back_Side_1.png?v=1686087015",
+      "width": 500
+    },
+    {
+      "alt": null,
+      "id": 29176949342361,
+      "position": 3,
+      "preview_image": {
+        "aspect_ratio": 1,
+        "height": 500,
+        "width": 500,
+        "src": "https://cdn.shopify.com/s/files/1/0575/3628/2777/files/iPad10thGenBlueWiFi_Cellular_Camera_1.png?v=1686087017"
+      },
+      "aspect_ratio": 1,
+      "height": 500,
+      "media_type": "image",
+      "src": "https://cdn.shopify.com/s/files/1/0575/3628/2777/files/iPad10thGenBlueWiFi_Cellular_Camera_1.png?v=1686087017",
+      "width": 500
+    }
+  ],
+  "requires_selling_plan": false,
+  "selling_plan_groups": []
+}

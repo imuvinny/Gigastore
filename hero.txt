@@ -1,0 +1,67 @@
+          <AnimatePresence mode="wait">
+            {slidesList[activeSlide] && (
+              <motion.div
+                 key={activeSlide}
+                 initial={{ opacity: 0, scale: 1.05 }}
+                 animate={{ opacity: 1, scale: 1 }}
+                 exit={{ opacity: 0 }}
+                 transition={{ duration: 0.8, ease: "easeInOut" }}
+                 className="absolute inset-0 flex flex-col md:flex-row items-center justify-between p-12 md:p-20"
+                 style={{ background: `radial-gradient(circle at 70% 50%, ${activeColor}30 0%, #000000 70%)` }}
+              >
+                 <div className="z-10 w-full md:w-1/2 relative pt-10 md:pt-0">
+                    {slidesList[activeSlide].titleLines.map((line, i) => (
+                       <motion.h2 
+                          key={i}
+                          initial={{ y: 20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: i * 0.1 + 0.3 }}
+                          className="text-5xl md:text-[80px] font-black leading-[0.9] tracking-tighter text-white"
+                       >
+                         {line}
+                       </motion.h2>
+                    ))}
+                    <motion.p 
+                       initial={{ y: 20, opacity: 0 }}
+                       animate={{ y: 0, opacity: 1 }}
+                       transition={{ delay: 0.5 }}
+                       className="mt-8 text-xl md:text-2xl font-bold tracking-widest uppercase"
+                       style={{ color: activeColor }}
+                    >
+                       {slidesList[activeSlide].accentText}
+                    </motion.p>
+                    {slidesList[activeSlide].specs && (
+                       <motion.p 
+                          initial={{ y: 20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.6 }}
+                          className="mt-4 text-white/60 font-medium text-lg"
+                       >
+                          {slidesList[activeSlide].specs}
+                       </motion.p>
+                    )}
+                 </div>
+                 <div className="absolute md:right-0 bottom-0 w-full md:w-[65%] h-[60%] md:h-[95%] flex items-end justify-center md:justify-end opacity-60 md:opacity-100 pointer-events-none z-0 px-4 md:px-0">
+                    <motion.img 
+                       initial={{ y: 100, opacity: 0, scale: 0.95 }}
+                       animate={{ y: 0, opacity: 1, scale: 1 }}
+                       exit={{ y: 100, opacity: 0, scale: 0.95 }}
+                       transition={{ duration: 0.8, ease: "easeOut" }}
+                       src={slidesList[activeSlide].image}
+                       className="w-[90%] md:w-full h-[90%] md:h-full object-contain object-bottom mix-blend-lighten drop-shadow-[0_0_80px_rgba(255,255,255,0.15)] origin-bottom md:pr-12 pb-4 md:pb-0"
+                    />
+                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          {/* Slide Indicators */}
+          <div className="absolute bottom-10 left-12 md:left-20 flex gap-4 z-20">
+            {slidesList.map((_, idx) => (
+              <button 
+                key={idx}
+                onClick={() => setActiveSlide(idx)}
+                className={`h-2 rounded-full transition-all duration-500 ${activeSlide === idx ? 'w-12 bg-white' : 'w-4 bg-white/30 hover:bg-white/50'}`}
+              />
+            ))}
+          </div>

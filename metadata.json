@@ -1,0 +1,8 @@
+{
+  "name": "Remix Giga Store",
+  "description": "A minimalist dark mode ecommerce app for iPhones and Samsung phones with smooth animations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

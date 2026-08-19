@@ -1,0 +1,170 @@
+{
+  "id": 7295518900377,
+  "title": "iPad 10.2\" (9th Gen, 2021) 64GB - Space Gray (Wi-Fi)",
+  "handle": "ipad-2021-9th-gen-10-2-64gb-space-gray-wifi-only",
+  "body_html": "<p>The only difference between our plug refurbished iPad 2021 (9th Gen) and a brand new one is the price.</p>\n\n<p>Our iPad 2021 (9th Gen) is up to 40% more affordable and is backed by our 12-Month Plug Warranty.</p>\n\n<p>To ensure our products meet our incredibly high-performance standards, we’ve developed a proprietary 90+ point functionality evaluation, deep cleaning, and sanitization process. Specialized technicians at our company’s headquarters hand test each device, and only products that pass our rigorous testing receive plug’s Certified Pre-Owned status and are sold.</p>",
+  "published_at": "2022-02-16T15:24:24-06:00",
+  "created_at": "2022-02-16T15:24:24-06:00",
+  "updated_at": "2026-07-28T03:23:44-05:00",
+  "vendor": "Apple",
+  "product_type": "Tablet",
+  "tags": [
+    "Apple",
+    "Apple iPad Series",
+    "badge_🔥 Deal of the Week",
+    "deal-of-the-week",
+    "iPad (9th Generation)",
+    "iPad 9th - 10.2\" - 2021 - A2602 - WO"
+  ],
+  "variants": [
+    {
+      "id": 41834203054233,
+      "title": "Space Gray / 64GB / Wifi / Good",
+      "option1": "Space Gray",
+      "option2": "64GB",
+      "option3": "Wifi",
+      "sku": "TBAP-IPA9-10221-64135-C1WO",
+      "requires_shipping": true,
+      "taxable": true,
+      "featured_image": null,
+      "available": true,
+      "price": "179.99",
+      "grams": 680,
+      "compare_at_price": "549.99",
+      "position": 1,
+      "product_id": 7295518900377,
+      "created_at": "2022-02-16T15:24:25-06:00",
+      "updated_at": "2026-07-28T03:23:44-05:00"
+    },
+    {
+      "id": 41834203119769,
+      "title": "Space Gray / 64GB / Wifi / Great",
+      "option1": "Space Gray",
+      "option2": "64GB",
+      "option3": "Wifi",
+      "sku": "TBAP-IPA9-10221-64135-B1WO",
+      "requires_shipping": true,
+      "taxable": true,
+      "featured_image": null,
+      "available": true,
+      "price": "189.99",
+      "grams": 680,
+      "compare_at_price": "549.99",
+      "position": 2,
+      "product_id": 7295518900377,
+      "created_at": "2022-02-16T15:24:25-06:00",
+      "updated_at": "2026-07-28T03:23:44-05:00"
+    },
+    {
+      "id": 41834203218073,
+      "title": "Space Gray / 64GB / Wifi / Excellent",
+      "option1": "Space Gray",
+      "option2": "64GB",
+      "option3": "Wifi",
+      "sku": "TBAP-IPA9-10221-64135-A1WO",
+      "requires_shipping": true,
+      "taxable": true,
+      "featured_image": null,
+      "available": true,
+      "price": "199.99",
+      "grams": 680,
+      "compare_at_price": "549.99",
+      "position": 3,
+      "product_id": 7295518900377,
+      "created_at": "2022-02-16T15:24:25-06:00",
+      "updated_at": "2026-07-28T03:23:44-05:00"
+    }
+  ],
+  "images": [
+    {
+      "id": 33865302802585,
+      "created_at": "2022-02-16T15:57:05-06:00",
+      "position": 1,
+      "updated_at": "2025-11-05T13:17:13-06:00",
+      "product_id": 7295518900377,
+      "variant_ids": [],
+      "src": "https://cdn.shopify.com/s/files/1/0575/3628/2777/products/iPad9thGenSpaceGray_Dual_2c625bd5-1b86-4703-82e0-07ff6325e1f1.png?v=1762370233",
+      "width": 600,
+      "height": 600
+    },
+    {
+      "id": 33865302868121,
+      "created_at": "2022-02-16T15:57:06-06:00",
+      "position": 2,
+      "updated_at": "2025-11-05T13:17:32-06:00",
+      "product_id": 7295518900377,
+      "variant_ids": [],
+      "src": "https://cdn.shopify.com/s/files/1/0575/3628/2777/products/iPad9thGenSpaceGray_Side_59ccd044-9a06-4f24-a32b-80aae2d9a802.png?v=1762370252",
+      "width": 600,
+      "height": 600
+    },
+    {
+      "id": 33865302933657,
+      "created_at": "2022-02-16T15:57:08-06:00",
+      "position": 3,
+      "updated_at": "2025-11-05T13:17:47-06:00",
+      "product_id": 7295518900377,
+      "variant_ids": [],
+      "src": "https://cdn.shopify.com/s/files/1/0575/3628/2777/products/iPad9thGenSpaceGray_Back_c9833eb5-798a-4046-9a89-9dda5c67a664.png?v=1762370267",
+      "width": 600,
+      "height": 600
+    },
+    {
+      "id": 35502257995929,
+      "created_at": "2022-09-21T12:13:38-05:00",
+      "position": 4,
+      "updated_at": "2022-09-21T12:13:40-05:00",
+      "product_id": 7295518900377,
+      "variant_ids": [],
+      "src": "https://cdn.shopify.com/s/files/1/0575/3628/2777/products/Untitled_500x500px_-2022-09-21T115452.599_c6573ec6-3bce-4218-9509-a6798baeee9e.png?v=1663780420",
+      "width": 500,
+      "height": 500
+    },
+    {
+      "id": 35502257438873,
+      "created_at": "2022-09-21T12:13:34-05:00",
+      "position": 5,
+      "updated_at": "2022-09-21T12:13:40-05:00",
+      "product_id": 7295518900377,
+      "variant_ids": [],
+      "src": "https://cdn.shopify.com/s/files/1/0575/3628/2777/products/Untitled_500x500px_-2022-09-21T115541.418_f26b8681-10c5-4609-98ca-75c8ba96c3ec.png?v=1663780420",
+      "width": 500,
+      "height": 500
+    }
+  ],
+  "options": [
+    {
+      "name": "Color",
+      "position": 1,
+      "values": [
+        "Silver",
+        "Space Gray"
+      ]
+    },
+    {
+      "name": "Storage",
+      "position": 2,
+      "values": [
+        "64GB",
+        "256GB"
+      ]
+    },
+    {
+      "name": "Connectivity",
+      "position": 3,
+      "values": [
+        "Cellular + Wifi",
+        "Wifi"
+      ]
+    },
+    {
+      "name": "Condition",
+      "position": 4,
+      "values": [
+        "Excellent",
+        "Good",
+        "Great"
+      ]
+    }
+  ]
+}
