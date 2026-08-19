@@ -809,11 +809,6 @@ export function CartSidebar({ cart, user, onClose, onUpdateQuantity, onRemove, o
                       </div>
                     </div>
                   </div>
-
-                  <div className="mt-6 p-4 bg-gray-50 border border-black/10 rounded-xl text-xs text-gray-700 leading-relaxed font-medium">
-                    <strong className="text-black block mb-1">Partnership Notice</strong>
-                    To ensure you receive the highest quality certified pre-owned devices, Giga partners with Plug.tech for our fulfillment and certification process. Your device will arrive in their certified packaging.
-                  </div>
                   
                   <button type="submit" disabled={isSubmitting} className="w-full bg-black text-white font-bold text-lg py-4 rounded-xl hover:bg-neutral-800 transition-colors mt-6 disabled:opacity-50">
                     {isSubmitting ? 'Processing Payment...' : `Pay ${formatRawZMW(totalZMW)}`}
