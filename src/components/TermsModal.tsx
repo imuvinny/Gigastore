@@ -130,6 +130,14 @@ export function TermsModal({ onClose }: TermsModalProps) {
                 </section>
               </div>
 
+              {/* Partnership Notice */}
+              <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Partnership Notice</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  To ensure you receive the highest quality certified pre-owned devices, Giga partners with Plug.tech for our fulfillment and certification process. Your device will arrive in their certified packaging.
+                </p>
+              </section>
+
               {/* Footer text */}
               <div className="text-center pb-4">
                 <p className="text-xs text-gray-400 font-medium">Gigastore | The Future of Connection. © 2026.</p>
