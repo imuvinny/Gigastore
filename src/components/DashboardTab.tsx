@@ -87,7 +87,7 @@ export function DashboardTab({ products }: DashboardTabProps) {
       if (error) throw error;
       setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     } catch (err: any) {
-      alert("Failed to update status: " + err.message);
+      console.error("Failed to update status: " + err.message);
     }
   };
 
@@ -169,7 +169,7 @@ export function DashboardTab({ products }: DashboardTabProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <motion.div 
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}

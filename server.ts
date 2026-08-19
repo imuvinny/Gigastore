@@ -421,7 +421,12 @@ app.get("/api/health", (req, res) => {
         const products = data.products;
         
         for (const item of products) {
-          const name = item.title;
+          let name = item.title;
+      // Remove the word "Plug" (case-insensitive) from the title
+      if (name) {
+        name = name.replace(/plug\s*-\s*/i, '');
+        name = name.replace(/\bplug\b/ig, '').trim();
+      }
           
           // Exclude AirPods Max as requested
           if (name.toLowerCase().includes('airpods max')) {
@@ -449,15 +454,15 @@ app.get("/api/health", (req, res) => {
           };
           let brand = brandMap[collection] || 'Other';
           if (collection === 'androids') {
-            if (item.vendor === 'Google' || item.title.includes('Pixel')) {
+            if (item.vendor === 'Google' || name.includes('Pixel')) {
               brand = 'Google Phones';
-            } else if (item.vendor === 'Samsung' || item.title.includes('Galaxy')) {
+            } else if (item.vendor === 'Samsung' || name.includes('Galaxy')) {
               brand = 'Samsung Phones';
             } else {
               brand = 'Android Phones';
             }
           } else if (collection === 'headphones' || collection === 'airpods') {
-            const t = item.title.toLowerCase();
+            const t = name.toLowerCase();
             if (t.includes('speaker') || t.includes('pill') || item.vendor === 'JBL') {
               brand = 'Speakers';
             } else if (item.vendor === 'Beats') {
@@ -499,7 +504,7 @@ app.get("/api/health", (req, res) => {
       if (item.variants) {
         item.variants.forEach((v: any) => {
           let rawPlugZmw = typeof v.price === 'number' ? (v.price > 100000 ? v.price / 100 : v.price) : parseFloat(v.price);
-          const margin = getProfitMarginZMW({ name: item.title, brand, price: rawPlugZmw });
+          const margin = getProfitMarginZMW({ name: name, brand, price: rawPlugZmw });
           let vPrice = Math.round(rawPlugZmw) + margin; // Plug ZMW price + exact profit margin
           if (vPrice < basePrice) basePrice = vPrice;
           

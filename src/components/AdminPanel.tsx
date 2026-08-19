@@ -112,14 +112,14 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
         }
 
         if (hasError) {
-          alert(`Error saving to Supabase: ${errorMessage}`);
+          console.error(`Error saving to Supabase: ${errorMessage}`);
         } else {
           setProducts(editingProducts);
           setSlides(editingSlides);
         }
       } catch (e: any) {
         console.error("Error saving to Supabase:", e);
-        alert(`Unexpected error: ${e.message}`);
+        console.error(`Unexpected error: ${e.message}`);
       }
     } else {
       setProducts(editingProducts);
@@ -153,17 +153,17 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
         newProducts[currentUploadTarget.index].image = publicUrl;
         setEditingProducts(newProducts);
         const { error: updateError } = await supabase.from('products').upsert(newProducts[currentUploadTarget.index]);
-        if (updateError) alert(`Error saving product image to database: ${updateError.message}`);
+        if (updateError) console.error(`Error saving product image to database: ${updateError.message}`);
       } else {
         const newSlides = [...editingSlides];
         newSlides[currentUploadTarget.index].image = publicUrl;
         setEditingSlides(newSlides);
         const { error: updateError } = await supabase.from('slides').upsert(newSlides[currentUploadTarget.index]);
-        if (updateError) alert(`Error saving slide image to database: ${updateError.message}`);
+        if (updateError) console.error(`Error saving slide image to database: ${updateError.message}`);
       }
     } catch (error: any) {
       console.error('Error uploading image:', error);
-      alert(`Error uploading image: ${error.message || 'Unknown error'}`);
+      console.error(`Error uploading image: ${error.message || 'Unknown error'}`);
     } finally {
       setUploading(false);
       setCurrentUploadTarget(null);
@@ -172,7 +172,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
   };
 
   const handleSync = async () => {
-    if (!confirm('This will trigger the bot to fetch new products from plug.tech. Are you sure?')) return;
+    
     setIsSyncing(true);
     try {
       const response = await fetch('/api/sync', { method: 'POST' }).catch((err) => {
@@ -194,22 +194,22 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
           }
         }
       } else {
-        alert('Sync failed: ' + data.error);
+        console.error('Sync failed: ' + data.error);
       }
     } catch (error: any) {
       console.error('Error syncing:', error);
-      alert('Error triggering sync bot: ' + (error.message || 'Unknown error'));
+      console.error('Error triggering sync bot: ' + (error.message || 'Unknown error'));
     } finally {
       setIsSyncing(false);
     }
   };
 
   const handleDeleteProduct = async (product: Product) => {
-    if (!confirm(`Are you sure you want to delete "${product.name}"?`)) return;
+    
     if (supabase) {
       const { error } = await supabase.from('products').delete().eq('id', product.id);
       if (error) {
-        alert('Failed to delete product from database: ' + error.message);
+        console.error('Failed to delete product from database: ' + error.message);
         return;
       }
     }
@@ -441,10 +441,10 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                             if (data.success) {
                               setSyncLogs([]);
                             } else {
-                              alert('Failed to delete logs: ' + (data.error || 'Unknown error'));
+                              console.error('Failed to delete logs: ' + (data.error || 'Unknown error'));
                             }
                           } catch (err) {
-                            alert('Failed to delete logs. Check network connection.');
+                            console.error('Failed to delete logs. Check network connection.');
                           }
                         }
                       }}
@@ -759,10 +759,10 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                                  await supabase.from('visits').delete().gte('created_at', '2000-01-01');
                                  await supabase.from('company_earnings').delete().gte('created_at', '2000-01-01');
                                  await supabase.from('orders').delete().gte('created_at', '2000-01-01');
-                                 alert("Dashboard data has been reset successfully. Please refresh the page to see changes.");
+                                 console.error("Dashboard data has been reset successfully. Please refresh the page to see changes.");
                                }
                             } catch (e) {
-                               alert("Error resetting data. Check console for details.");
+                               console.error("Error resetting data. Check console for details.");
                                console.error(e);
                             }
                         }
