@@ -78,16 +78,15 @@ const isPlugPromoImage = (url: string): boolean => {
   );
 };
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
+const PORT = 3000;
 
-  app.use(express.json());
+app.use(express.json());
 
-  // API routes FIRST
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
-  });
+// API routes FIRST
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
   // Lenco Pay API Configuration & Operations
   function getLencoSecretKey(): { key: string | null; error?: string } {
@@ -720,7 +719,8 @@ async function startServer() {
     }
   });
 
-  // Vite middleware for development
+  async function startServer() {
+    // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -735,9 +735,15 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
