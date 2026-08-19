@@ -14,6 +14,11 @@ interface DashboardTabProps {
 export function DashboardTab({ products }: DashboardTabProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [totalVisits, setTotalVisits] = useState<number>(0);
+  const [totalUsers, setTotalUsers] = useState<number>(0);
+  const [todaysOrders, setTodaysOrders] = useState<number>(0);
+  const [todaysEarnings, setTodaysEarnings] = useState<number>(0);
+  const [showTodaysOrders, setShowTodaysOrders] = useState(false);
+  const [showTodaysEarnings, setShowTodaysEarnings] = useState(false);
   const [earnings, setEarnings] = useState<CompanyEarning[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,19 +30,55 @@ export function DashboardTab({ products }: DashboardTabProps) {
       }
       
       const { data: ordersData } = await supabase.from('orders').select('*').neq('status', 'pending').order('created_at', { ascending: false });
-      if (ordersData) setOrders(ordersData as Order[]);
+      if (ordersData) {
+        setOrders(ordersData as Order[]);
+      }
 
-      const { count: visitsCount } = await supabase.from('visits').select('*', { count: 'exact', head: true });
-      if (visitsCount !== null) setTotalVisits(visitsCount);
+      const { data: visitsData } = await supabase.from('visits').select('visitor_id');
+      if (visitsData) {
+        setTotalVisits(visitsData.length);
+        const uniqueUsers = new Set(visitsData.map(v => v.visitor_id)).size;
+        setTotalUsers(uniqueUsers);
+      }
 
       const { data: earningsData } = await supabase.from('company_earnings').select('*').order('created_at', { ascending: false });
-      if (earningsData) setEarnings(earningsData as CompanyEarning[]);
+      if (earningsData) {
+        setEarnings(earningsData as CompanyEarning[]);
+      }
 
       setLoading(false);
     }
     
     fetchData();
-  }, []);
+
+    // Setup Realtime Subscriptions
+    if (supabase) {
+      const ordersSub = supabase.channel('orders-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          fetchData();
+        })
+        .subscribe();
+
+      const earningsSub = supabase.channel('earnings-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'company_earnings' }, () => {
+          fetchData();
+        })
+        .subscribe();
+        
+      const visitsSub = supabase.channel('visits-changes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'visits' }, () => {
+          fetchData();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(ordersSub);
+        supabase.removeChannel(earningsSub);
+        supabase.removeChannel(visitsSub);
+      };
+    }
+    
+    }, []);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     if (!supabase) return;
@@ -82,6 +123,17 @@ export function DashboardTab({ products }: DashboardTabProps) {
       monthlyRevenue[monthIndex].value += getOrderProfitZMW(o);
     });
   }
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const todaysOrdersList = orders.filter(o => new Date(o.created_at) >= startOfToday);
+  const todaysEarningsList = earnings.length > 0 
+    ? earnings.filter(e => new Date(e.created_at) >= startOfToday)
+    : orders.filter(o => new Date(o.created_at) >= startOfToday).map(o => ({ net_profit: getOrderProfitZMW(o) }));
+  
+  const todaysOrdersCount = todaysOrdersList.length;
+  const todaysEarningsTotal = todaysEarningsList.reduce((sum, e) => sum + Number(e.net_profit || 0), 0);
 
   const [dbError, setDbError] = useState(false);
 
