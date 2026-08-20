@@ -428,8 +428,9 @@ app.get("/api/health", (req, res) => {
         name = name.replace(/\bplug\b/ig, '').trim();
       }
           
-          // Exclude AirPods Max as requested
-          if (name.toLowerCase().includes('airpods max')) {
+          // Exclude AirPods Max and Plugtech bags/sleeves as requested
+          const lowerName = name.toLowerCase();
+          if (lowerName.includes('airpods max') || lowerName.includes('sleeve') || lowerName.includes('backpack')) {
             const { data: existing } = await supabase.from('products').select('id').eq('name', name);
             if (existing && existing.length > 0) {
               await supabase.from('products').delete().eq('id', existing[0].id);
