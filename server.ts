@@ -389,24 +389,6 @@ app.get("/api/health", (req, res) => {
       const addedItems: any[] = [];
       const updatedItems: any[] = [];
       let deletedItems: any[] = [];
-      
-      let exchangeRate = 20.05; // Fallback rate
-      try {
-        const erRes = await fetch('https://open.er-api.com/v6/latest/USD', {
-          signal: AbortSignal.timeout(3000)
-        });
-        if (erRes.ok) {
-           const erData = await erRes.json();
-           if (erData && erData.rates && erData.rates.ZMW) {
-               exchangeRate = erData.rates.ZMW;
-               if (exchangeRate < 19) {
-                 exchangeRate = 20.05; 
-               }
-           }
-        }
-      } catch (e) {
-        console.error("Failed to fetch exchange rate", e);
-      }
 
       const getProfitMarginZMW = (p: { name: string; brand?: string; price?: number }) => {
         const n = (p.name || '').toLowerCase();
@@ -452,41 +434,63 @@ app.get("/api/health", (req, res) => {
         return '#cccccc';
       };
 
-      // 1. Fetch all existing products from Supabase in ONE query
-      const { data: existingProductsData, error: fetchExistingErr } = await supabase.from('products').select('id, name, brand, image');
-      if (fetchExistingErr) {
-        console.error("Error fetching existing products:", fetchExistingErr.message);
-      }
-      const existingProductMap = new Map<string, string>(
-        (existingProductsData || []).map((p: any) => [String(p.name), String(p.id)])
-      );
+      // 1. Parallel fetch of exchange rate, existing DB products, and all collections
+      const fetchExchangeRate = async () => {
+        try {
+          const erRes = await fetch('https://open.er-api.com/v6/latest/USD', {
+            signal: AbortSignal.timeout(2500)
+          });
+          if (erRes.ok) {
+            const erData = await erRes.json();
+            if (erData?.rates?.ZMW && erData.rates.ZMW >= 19) {
+              return erData.rates.ZMW;
+            }
+          }
+        } catch (e) {
+          console.error("Exchange rate fetch error, using fallback 20.05", e);
+        }
+        return 20.05;
+      };
 
-      // 2. Parallel fetch of all collections from plug.tech
+      const fetchExistingProducts = async () => {
+        try {
+          const { data, error } = await supabase.from('products').select('id, name, brand, image');
+          if (error) console.error("Error fetching existing products:", error.message);
+          return data || [];
+        } catch (e) {
+          console.error("Failed to query existing products:", e);
+          return [];
+        }
+      };
+
       const collectionFetches = collections.map(async (collection) => {
         try {
-          console.log(`Fetching from collection: ${collection}`);
           const response = await fetch(`https://www.plug.tech/collections/${collection}/products.json?limit=250&currency=ZMW`, { 
             headers: { 
               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36", 
               "Accept": "application/json",
               "Cookie": "cart_currency=ZMW"
             },
-            signal: AbortSignal.timeout(6000)
+            signal: AbortSignal.timeout(4000)
           });
 
-          if (!response.ok) {
-            console.error(`Failed to fetch ${collection}: ${response.statusText}`);
-            return { collection, products: [] };
-          }
+          if (!response.ok) return { collection, products: [] };
           const data = await response.json();
           return { collection, products: data.products || [] };
         } catch (err) {
-          console.error(`Error fetching collection ${collection}:`, err);
           return { collection, products: [] };
         }
       });
 
-      const fetchedCollections = await Promise.all(collectionFetches);
+      const [exchangeRate, existingProductsData, fetchedCollections] = await Promise.all([
+        fetchExchangeRate(),
+        fetchExistingProducts(),
+        Promise.all(collectionFetches)
+      ]);
+
+      const existingProductMap = new Map<string, string>(
+        existingProductsData.map((p: any) => [String(p.name), String(p.id)])
+      );
 
       const toDeleteIdsSet = new Set<string>();
       const toInsertList: any[] = [];
@@ -697,43 +701,57 @@ app.get("/api/health", (req, res) => {
         }
       }
 
-      // Execute batch operations
+      // 2. High-speed parallelized database updates & inserts
+      const dbTasks: Promise<any>[] = [];
+
       if (toDeleteIdsSet.size > 0) {
         const idsToDelete = Array.from(toDeleteIdsSet);
-        const { error: delErr } = await supabase.from('products').delete().in('id', idsToDelete);
-        if (!delErr) deletedCount += idsToDelete.length;
+        dbTasks.push(
+          supabase.from('products').delete().in('id', idsToDelete).then(({ error }) => {
+            if (!error) deletedCount += idsToDelete.length;
+          })
+        );
       }
 
       if (toInsertList.length > 0) {
-        for (let i = 0; i < toInsertList.length; i += 50) {
-          const chunk = toInsertList.slice(i, i + 50);
-          const { error: insErr } = await supabase.from('products').insert(chunk);
-          if (insErr) console.error("Batch insert error:", insErr.message);
+        for (let i = 0; i < toInsertList.length; i += 100) {
+          const chunk = toInsertList.slice(i, i + 100);
+          dbTasks.push(
+            supabase.from('products').insert(chunk).then(({ error }) => {
+              if (error) console.error("Batch insert error:", error.message);
+            })
+          );
         }
       }
 
       if (toUpdateList.length > 0) {
-        for (let i = 0; i < toUpdateList.length; i += 50) {
-          const chunk = toUpdateList.slice(i, i + 50);
-          const { error: upsertErr } = await supabase.from('products').upsert(chunk);
-          if (upsertErr) console.error("Batch upsert error:", upsertErr.message);
+        for (let i = 0; i < toUpdateList.length; i += 100) {
+          const chunk = toUpdateList.slice(i, i + 100);
+          dbTasks.push(
+            supabase.from('products').upsert(chunk).then(({ error }) => {
+              if (error) console.error("Batch upsert error:", error.message);
+            })
+          );
         }
       }
 
       // Clean up products no longer listed in active sync
+      let staleProducts: any[] = [];
       if (existingProductsData && syncedProductNames.size > 10) {
-        const staleProducts = existingProductsData.filter((p: any) => !syncedProductNames.has(p.name) && !toDeleteIdsSet.has(p.id));
+        staleProducts = existingProductsData.filter((p: any) => !syncedProductNames.has(p.name) && !toDeleteIdsSet.has(p.id));
         if (staleProducts.length > 0) {
           const staleIds = staleProducts.map((p: any) => p.id);
           deletedItems = staleProducts.map((p: any) => ({ name: p.name, brand: p.brand || '', image: p.image || '' }));
-          const { error: delErr } = await supabase.from('products').delete().in('id', staleIds);
-          if (!delErr) {
-            deletedCount += staleIds.length;
-          } else {
-            console.error("Error deleting stale products:", delErr.message);
-          }
+          dbTasks.push(
+            supabase.from('products').delete().in('id', staleIds).then(({ error }) => {
+              if (!error) deletedCount += staleIds.length;
+            })
+          );
         }
       }
+
+      // Execute all DB tasks concurrently in parallel!
+      await Promise.all(dbTasks);
 
       const syncLog = {
         id: `sync_${Date.now()}`,
@@ -742,12 +760,14 @@ app.get("/api/health", (req, res) => {
         addedCount,
         updatedCount,
         deletedCount,
-        addedItems,
-        updatedItems: updatedItems.slice(0, 100),
-        deletedItems
+        addedItems: addedItems.slice(0, 50),
+        updatedItems: updatedItems.slice(0, 50),
+        deletedItems: deletedItems.slice(0, 50)
       };
-      await saveSyncLogToDb(syncLog);
       
+      // Save sync log without blocking
+      saveSyncLogToDb(syncLog).catch(e => console.error("Sync log save error:", e));
+
       res.json({ 
         success: true, 
         addedCount, 
