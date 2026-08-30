@@ -760,7 +760,7 @@ app.get("/api/health", (req, res) => {
 
       // Execute all DB tasks concurrently in parallel!
       const syncPromise = Promise.all(dbTasks.map(p => p.catch(e => { console.error("Caught DB error:", e); return e; })));
-      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve("TIMEOUT"), 4000));
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve("TIMEOUT"), 50000));
       const raceResult = await Promise.race([syncPromise, timeoutPromise]);
       
       if (raceResult === "TIMEOUT") {
