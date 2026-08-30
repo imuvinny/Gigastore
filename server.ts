@@ -392,7 +392,9 @@ app.get("/api/health", (req, res) => {
       
       let exchangeRate = 20.05; // Fallback rate
       try {
-        const erRes = await fetch('https://open.er-api.com/v6/latest/USD');
+        const erRes = await fetch('https://open.er-api.com/v6/latest/USD', {
+          signal: AbortSignal.timeout(3000)
+        });
         if (erRes.ok) {
            const erData = await erRes.json();
            if (erData && erData.rates && erData.rates.ZMW) {
@@ -468,7 +470,8 @@ app.get("/api/health", (req, res) => {
               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36", 
               "Accept": "application/json",
               "Cookie": "cart_currency=ZMW"
-            } 
+            },
+            signal: AbortSignal.timeout(6000)
           });
 
           if (!response.ok) {
