@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Database, Image as ImageIcon, Save, Terminal, Upload, 
   LayoutDashboard, Trash2, Menu, LogOut, History, Sparkles, 
-  Search, ArrowUpDown, Filter, Eye, CheckCircle2, AlertCircle, Plus, Settings 
+  Search, ArrowUpDown, Filter, Eye, CheckCircle2, AlertCircle, Plus, Settings, RefreshCw 
 } from 'lucide-react';
 import { Product, Slide, SyncLog } from '../types';
 import { supabase } from '../lib/supabase';
@@ -39,24 +39,37 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
   const [catalogSearch, setCatalogSearch] = useState('');
   const [catalogSort, setCatalogSort] = useState<'newest' | 'oldest' | 'name_asc' | 'name_desc' | 'price_high' | 'price_low'>('newest');
   const [showNewlyAddedOnly, setShowNewlyAddedOnly] = useState(false);
+  const [isFetchingLogs, setIsFetchingLogs] = useState(false);
+  const [syncLogsWarning, setSyncLogsWarning] = useState<string | null>(null);
 
-  // Fetch sync logs on mount
-  useEffect(() => {
-    async function fetchLogs() {
-      try {
-        const res = await fetch('/api/sync-logs');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && Array.isArray(data.logs)) {
-            setSyncLogs(data.logs);
-          }
+  // Fetch sync logs function
+  const fetchLogs = async () => {
+    setIsFetchingLogs(true);
+    setSyncLogsWarning(null);
+    try {
+      const res = await fetch('/api/sync-logs');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.warning) {
+          setSyncLogsWarning(data.warning);
         }
-      } catch (e) {
-        console.error('Failed to fetch sync logs:', e);
+        if (data.success && Array.isArray(data.logs)) {
+          setSyncLogs(data.logs);
+        }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        console.error('Failed to fetch sync logs:', errData.error || res.statusText);
       }
+    } catch (e) {
+      console.error('Failed to fetch sync logs:', e);
+    } finally {
+      setIsFetchingLogs(false);
     }
+  };
+
+  useEffect(() => {
     fetchLogs();
-  }, []);
+  }, [activeTab]);
 
   const handleLogout = async () => {
     if (supabase) {
@@ -194,13 +207,15 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
           }
         }
       } else {
-        console.error('Sync failed: ' + data.error);
+        alert('Sync failed: ' + (data.error || 'Unknown error'));
+        console.error('Sync failed:', data.error);
       }
     } catch (error: any) {
+      alert('Error triggering sync bot: ' + (error.message || 'Unknown error'));
       console.error('Error syncing:', error);
-      console.error('Error triggering sync bot: ' + (error.message || 'Unknown error'));
     } finally {
       setIsSyncing(false);
+      await fetchLogs();
     }
   };
 
@@ -431,6 +446,13 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                   <div className="text-xs font-bold bg-gray-100 px-3 py-1.5 rounded-xl text-gray-700">
                     Total Sessions: {syncLogs.length}
                   </div>
+                  <button 
+                    onClick={fetchLogs}
+                    disabled={isFetchingLogs}
+                    className="text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={isFetchingLogs ? "animate-spin" : ""} /> Refresh
+                  </button>
                   {syncLogs.length > 0 && (
                     <button 
                       onClick={async () => {
@@ -455,6 +477,15 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                   )}
                 </div>
               </div>
+
+              {syncLogsWarning && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs flex items-start gap-2.5">
+                  <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Configuration Notice:</span> {syncLogsWarning}
+                  </div>
+                </div>
+              )}
 
               {syncLogs.length === 0 ? (
                 <div className="text-center py-16 bg-gray-50 rounded-2xl border border-dashed border-gray-200">

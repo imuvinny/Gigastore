@@ -6,18 +6,28 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
-
-let supabase: any = null;
-if (supabaseUrl && supabaseKey) {
-  supabase = createClient(supabaseUrl, supabaseKey);
+let cachedSupabase: any = null;
+function getSupabaseClient() {
+  if (cachedSupabase) return cachedSupabase;
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (url && key) {
+    cachedSupabase = createClient(url, key, {
+      auth: { persistSession: false }
+    });
+    return cachedSupabase;
+  }
+  return null;
 }
 
 async function saveSyncLogToDb(syncLog: any) {
-  if (!supabase) return;
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    console.error("saveSyncLogToDb: Supabase client not initialized. Missing environment variables on Vercel.");
+    return;
+  }
   try {
-    await supabase.from('sync_logs').insert([{
+    const { error } = await supabase.from('sync_logs').insert([{
       timestamp: syncLog.timestamp,
       status: syncLog.status,
       added_count: syncLog.addedCount,
@@ -28,6 +38,11 @@ async function saveSyncLogToDb(syncLog: any) {
       deleted_items: syncLog.deletedItems,
       error_message: syncLog.errorMessage
     }]);
+    if (error) {
+      console.error("Error inserting into sync_logs table:", error.message || error);
+    } else {
+      console.log("Sync log successfully saved to Supabase.");
+    }
   } catch (e) {
     console.error("Error saving sync log to DB:", e);
   }
@@ -281,6 +296,7 @@ app.get("/api/health", (req, res) => {
       const status = payload.data?.status || payload.status;
       const reference = payload.data?.reference || payload.reference;
 
+      const supabase = getSupabaseClient();
       if ((status === "successful" || eventType === "collection.successful") && reference && supabase) {
         // Update order status in database
         console.log(`Updating order reference ${reference} to Processing`);
@@ -295,7 +311,15 @@ app.get("/api/health", (req, res) => {
   });
 
   app.get("/api/sync-logs", async (req, res) => {
-    if (!supabase) return res.json({ success: true, logs: [] });
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.warn("Supabase credentials missing on server side.");
+      return res.json({ 
+        success: true, 
+        logs: [], 
+        warning: "Supabase environment variables (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY or SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY) are missing in Vercel settings." 
+      });
+    }
     try {
       const { data: logs, error } = await supabase
         .from('sync_logs')
@@ -303,9 +327,12 @@ app.get("/api/health", (req, res) => {
         .order('timestamp', { ascending: false })
         .limit(50);
         
-      if (error && error.code !== '42P01') throw error; // Ignore if table doesn't exist yet
+      if (error && error.code !== '42P01') {
+        console.error("Supabase error fetching sync logs:", error);
+        return res.status(500).json({ error: error.message, success: false });
+      }
       
-      const formattedLogs = (logs || []).map(l => ({
+      const formattedLogs = (logs || []).map((l: any) => ({
         id: l.id,
         timestamp: l.timestamp,
         status: l.status,
@@ -319,11 +346,13 @@ app.get("/api/health", (req, res) => {
       }));
       res.json({ success: true, logs: formattedLogs });
     } catch (e: any) {
+      console.error("Error fetching sync logs:", e);
       res.status(500).json({ error: e.message || 'Failed to fetch sync logs' });
     }
   });
 
   app.delete("/api/sync-logs", async (req, res) => {
+    const supabase = getSupabaseClient();
     if (!supabase) return res.status(500).json({ error: "Supabase not configured" });
     try {
       await supabase.from('sync_logs').delete().gte('timestamp', '2000-01-01');
@@ -334,8 +363,11 @@ app.get("/api/health", (req, res) => {
   });
 
   app.post("/api/sync", async (req, res) => {
+    const supabase = getSupabaseClient();
     if (!supabase) {
-      return res.status(500).json({ error: "Supabase not configured" });
+      return res.status(500).json({ 
+        error: "Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY) in Vercel Environment Variables." 
+      });
     }
 
     try {
@@ -423,7 +455,9 @@ app.get("/api/health", (req, res) => {
       if (fetchExistingErr) {
         console.error("Error fetching existing products:", fetchExistingErr.message);
       }
-      const existingProductMap = new Map((existingProductsData || []).map((p: any) => [p.name, p.id]));
+      const existingProductMap = new Map<string, string>(
+        (existingProductsData || []).map((p: any) => [String(p.name), String(p.id)])
+      );
 
       // 2. Parallel fetch of all collections from plug.tech
       const collectionFetches = collections.map(async (collection) => {
