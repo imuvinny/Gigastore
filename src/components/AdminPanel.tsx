@@ -199,31 +199,66 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
   const handleSync = async () => {
     setIsSyncing(true);
     try {
-      const response = await fetch('/api/sync', { method: 'POST' }).catch((err) => {
-        throw new Error('Network error during sync execution.');
-      });
-      const data = await parseSafeJson(response);
-      if (data.success) {
-        if (data.syncLog) {
-          setSyncLogs(prev => [data.syncLog, ...prev]);
-          // Open detailed sync modal right away!
-          setSelectedSyncLogModal(data.syncLog);
+      const collections = [
+        "apple-iphones", "apple-watches", "apple-ipads", "macbooks", 
+        "airpods", "headphones", "androids", "accessories"
+      ];
+      
+      let totalAdded = 0;
+      let totalUpdated = 0;
+      let totalDeleted = 0;
+      let combinedSyncLog: any = null;
+      
+      // We will sync collections one by one to stay under Vercel's 10-second timeout limit
+      for (const collection of collections) {
+        const response = await fetch('/api/sync', { 
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ collection })
+        }).catch((err) => {
+          throw new Error(`Network error during sync of ${collection}.`);
+        });
+        
+        const data = await parseSafeJson(response);
+        if (data.success) {
+           totalAdded += data.addedCount || 0;
+           totalUpdated += data.updatedCount || 0;
+           totalDeleted += data.deletedCount || 0;
+           if (data.syncLog) {
+             // For simplicity we just capture the very last sync log for the modal, or combine them
+             combinedSyncLog = data.syncLog; 
+             setSyncLogs(prev => [data.syncLog, ...prev]);
+           }
+        } else {
+           console.error(`Sync failed for ${collection}:`, data.error);
+           alert(`Sync failed for ${collection}: ` + (data.error || 'Unknown error'));
+           return; // Abort the remaining collections if one fails
         }
-        // Fetch fresh products from Supabase
-        if (supabase) {
-          try {
-            const { data: freshProducts } = await supabase.from('products').select('*');
-            if (freshProducts) {
-              setEditingProducts(freshProducts);
-              setProducts(freshProducts);
-            }
-          } catch (spErr) {
-            console.error('Error fetching fresh products from Supabase:', spErr);
+      }
+      
+      if (combinedSyncLog) {
+         // Create a synthetic combined log for the modal display
+         const megaLog = {
+           ...combinedSyncLog,
+           addedCount: totalAdded,
+           updatedCount: totalUpdated,
+           deletedCount: totalDeleted,
+           id: `mega_sync_${Date.now()}`
+         };
+         setSelectedSyncLogModal(megaLog);
+      }
+
+      // Fetch fresh products from Supabase
+      if (supabase) {
+        try {
+          const { data: freshProducts } = await supabase.from('products').select('*');
+          if (freshProducts) {
+            setEditingProducts(freshProducts);
+            setProducts(freshProducts);
           }
+        } catch (spErr) {
+          console.error('Error fetching fresh products from Supabase:', spErr);
         }
-      } else {
-        alert('Sync failed: ' + (data.error || 'Unknown error'));
-        console.error('Sync failed:', data.error);
       }
     } catch (error: any) {
       alert('Error triggering sync bot: ' + (error.message || 'Unknown error'));

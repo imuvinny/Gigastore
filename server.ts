@@ -371,7 +371,9 @@ app.get("/api/health", (req, res) => {
     }
 
     try {
-      const collections = [
+      const { collection: targetCollection } = req.body || {};
+      
+      const collections = targetCollection ? [targetCollection] : [
         "apple-iphones",
         "apple-watches",
         "apple-ipads",
@@ -744,7 +746,7 @@ app.get("/api/health", (req, res) => {
 
       // Clean up products no longer listed in active sync
       let staleProducts: any[] = [];
-      if (!anyFetchFailed && existingProductsData && syncedProductNames.size > 10) {
+      if (!targetCollection && !anyFetchFailed && existingProductsData && syncedProductNames.size > 10) {
         staleProducts = existingProductsData.filter((p: any) => !syncedProductNames.has(p.name) && !toDeleteIdsSet.has(p.id));
         if (staleProducts.length > 0) {
           const staleIds = staleProducts.map((p: any) => p.id);
