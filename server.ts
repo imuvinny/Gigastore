@@ -402,39 +402,71 @@ app.get("/api/health", (req, res) => {
         return 100;
       };
 
-      for (const collection of collections) {
-        console.log(`Fetching from collection: ${collection}`);
-        const response = await fetch(`https://www.plug.tech/collections/${collection}/products.json?limit=250&currency=ZMW`, { 
-          headers: { 
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36", 
-            "Accept": "application/json",
-            "Cookie": "cart_currency=ZMW"
-          } 
-        });
+      const colorToHex = (colorName: string) => {
+        const c = (colorName || '').toLowerCase();
+        if (c.includes('black') || c.includes('midnight') || c.includes('space')) return '#1a1a1a';
+        if (c.includes('white') || c.includes('starlight') || c.includes('silver')) return '#f3f3f3';
+        if (c.includes('red')) return '#ff3b30';
+        if (c.includes('blue') || c.includes('pacific') || c.includes('sierra') || c.includes('ultramarine')) return '#215e7c';
+        if (c.includes('green') || c.includes('alpine') || c.includes('mint') || c.includes('teal')) return '#a3e4d7';
+        if (c.includes('pink') || c.includes('rose')) return '#f5b7b1';
+        if (c.includes('yellow')) return '#f9e79f';
+        if (c.includes('purple')) return '#4b2e5c';
+        if (c.includes('gold')) return '#ffd700';
+        if (c.includes('graphite')) return '#4a4a4a';
+        if (c.includes('titanium')) return '#878681';
+        return '#cccccc';
+      };
 
-        if (!response.ok) {
-          console.error(`Failed to fetch ${collection}: ${response.statusText}`);
-          continue;
+      // 1. Fetch all existing products from Supabase in ONE query
+      const { data: existingProductsData, error: fetchExistingErr } = await supabase.from('products').select('id, name, brand, image');
+      if (fetchExistingErr) {
+        console.error("Error fetching existing products:", fetchExistingErr.message);
+      }
+      const existingProductMap = new Map((existingProductsData || []).map((p: any) => [p.name, p.id]));
+
+      // 2. Parallel fetch of all collections from plug.tech
+      const collectionFetches = collections.map(async (collection) => {
+        try {
+          console.log(`Fetching from collection: ${collection}`);
+          const response = await fetch(`https://www.plug.tech/collections/${collection}/products.json?limit=250&currency=ZMW`, { 
+            headers: { 
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36", 
+              "Accept": "application/json",
+              "Cookie": "cart_currency=ZMW"
+            } 
+          });
+
+          if (!response.ok) {
+            console.error(`Failed to fetch ${collection}: ${response.statusText}`);
+            return { collection, products: [] };
+          }
+          const data = await response.json();
+          return { collection, products: data.products || [] };
+        } catch (err) {
+          console.error(`Error fetching collection ${collection}:`, err);
+          return { collection, products: [] };
         }
-        
-        const data = await response.json();
-        const products = data.products;
-        
+      });
+
+      const fetchedCollections = await Promise.all(collectionFetches);
+
+      const toDeleteIdsSet = new Set<string>();
+      const toInsertList: any[] = [];
+      const toUpdateList: any[] = [];
+
+      for (const { collection, products } of fetchedCollections) {
         for (const item of products) {
           let name = item.title;
-      // Remove the word "Plug" (case-insensitive) from the title
-      if (name) {
-        name = name.replace(/plug\s*-\s*/i, '');
-        name = name.replace(/\bplug\b/ig, '').trim();
-      }
-          
-          // Exclude AirPods Max and Plugtech bags/sleeves as requested
+          if (name) {
+            name = name.replace(/plug\s*-\s*/i, '');
+            name = name.replace(/\bplug\b/ig, '').trim();
+          }
+
           const lowerName = name.toLowerCase();
           if (lowerName.includes('airpods max') || lowerName.includes('sleeve') || lowerName.includes('backpack')) {
-            const { data: existing } = await supabase.from('products').select('id').eq('name', name);
-            if (existing && existing.length > 0) {
-              await supabase.from('products').delete().eq('id', existing[0].id);
-              deletedCount++;
+            if (existingProductMap.has(name)) {
+              toDeleteIdsSet.add(existingProductMap.get(name)!);
             }
             continue;
           }
@@ -443,6 +475,7 @@ app.get("/api/health", (req, res) => {
           const cleanItemImages = rawAllImages.filter((src: string) => !isPlugPromoImage(src));
           const image = cleanItemImages.length > 0 ? cleanItemImages[0] : '';
           const description = (item.body_html || item.description || '').replace(/(<([^>]+)?>)/gi, "");
+          
           const brandMap: Record<string, string> = {
             "apple-iphones": "Apple Phones",
             "apple-watches": "Apple Watches",
@@ -472,156 +505,137 @@ app.get("/api/health", (req, res) => {
           }
           const accentColor = '#3ecf8e';
 
-// Extract colors, storages, conditions
-      const colorToHex = (colorName) => {
-        const c = (colorName || '').toLowerCase();
-        if (c.includes('black') || c.includes('midnight') || c.includes('space')) return '#1a1a1a';
-        if (c.includes('white') || c.includes('starlight') || c.includes('silver')) return '#f3f3f3';
-        if (c.includes('red')) return '#ff3b30';
-        if (c.includes('blue') || c.includes('pacific') || c.includes('sierra') || c.includes('ultramarine')) return '#215e7c';
-        if (c.includes('green') || c.includes('alpine') || c.includes('mint') || c.includes('teal')) return '#a3e4d7';
-        if (c.includes('pink') || c.includes('rose')) return '#f5b7b1';
-        if (c.includes('yellow')) return '#f9e79f';
-        if (c.includes('purple')) return '#4b2e5c';
-        if (c.includes('gold')) return '#ffd700';
-        if (c.includes('graphite')) return '#4a4a4a';
-        if (c.includes('titanium')) return '#878681';
-        return '#cccccc';
-      };
-
-      const availableVariants = (item.variants || []).filter((v: any) => v.available !== false);
-      if (availableVariants.length === 0 && item.variants && item.variants.length > 0) {
-        const { data: existing } = await supabase.from('products').select('id').eq('name', name);
-        if (existing && existing.length > 0) {
-          await supabase.from('products').delete().eq('id', existing[0].id);
-          deletedCount++;
-        }
-        continue;
-      }
-
-      const colorOptionsMap = new Map();
-      let basePrice = Infinity;
-
-      if (item.variants) {
-        item.variants.forEach((v: any) => {
-          let rawPlugZmw = typeof v.price === 'number' ? (v.price > 100000 ? v.price / 100 : v.price) : parseFloat(v.price);
-          const margin = getProfitMarginZMW({ name: name, brand, price: rawPlugZmw });
-          let vPrice = Math.round(rawPlugZmw) + margin; // Plug ZMW price + exact profit margin
-          if (vPrice < basePrice) basePrice = vPrice;
-          
-          let color = null;
-          let storage = null;
-          let connectivity = null;
-          let condition = null;
-          
-          const opts = (v.title || '').split(' / ').map(s => s.trim());
-          opts.forEach(opt => {
-            if (['Good', 'Great', 'Excellent', 'Flawless'].includes(opt)) condition = opt;
-            else if (opt.includes('GB') || opt.includes('TB')) storage = opt;
-            else if (opt.toLowerCase().includes('wifi') || opt.toLowerCase().includes('wi-fi') || opt.toLowerCase().includes('cellular') || opt.toLowerCase().includes('unlocked') || opt.toLowerCase().includes('verizon') || opt.toLowerCase().includes('t-mobile') || opt.toLowerCase().includes('at&t')) connectivity = opt;
-            else if (opt !== 'Default Title') color = opt;
-          });
-          
-          if (!color) color = "Default";
-          if (!storage) storage = "128GB";
-          if (!condition) condition = "Great";
-          
-          if (!colorOptionsMap.has(color)) {
-            let imgUrl = image;
-            const colorLower = color.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const rawItemImages = (item.images || []).map((img: any) => typeof img === 'string' ? img : img.src).filter(Boolean);
-            const availableItemImages = rawItemImages.filter((src: string) => !isPlugPromoImage(src));
-            
-            let colorImages = availableItemImages.filter((src: string) => {
-                const s = src.toLowerCase().replace(/[^a-z0-9]/g, '');
-                return s.includes(colorLower);
-            });
-            if (colorImages.length === 0) {
-                colorImages = availableItemImages;
+          const availableVariants = (item.variants || []).filter((v: any) => v.available !== false);
+          if (availableVariants.length === 0 && item.variants && item.variants.length > 0) {
+            if (existingProductMap.has(name)) {
+              toDeleteIdsSet.add(existingProductMap.get(name)!);
             }
-            
-            if (item.images) {
-              const matchedImg = item.images.find((img: any) => {
-                  const src = typeof img === 'string' ? img : img.src;
-                  return src && !isPlugPromoImage(src) && src.toLowerCase().replace(/[^a-z0-9]/g, '').includes(colorLower);
+            continue;
+          }
+
+          const colorOptionsMap = new Map();
+          let basePrice = Infinity;
+
+          if (item.variants) {
+            item.variants.forEach((v: any) => {
+              let rawPlugZmw = typeof v.price === 'number' ? (v.price > 100000 ? v.price / 100 : v.price) : parseFloat(v.price);
+              const margin = getProfitMarginZMW({ name: name, brand, price: rawPlugZmw });
+              let vPrice = Math.round(rawPlugZmw) + margin;
+              if (vPrice < basePrice) basePrice = vPrice;
+              
+              let color = null;
+              let storage = null;
+              let connectivity = null;
+              let condition = null;
+              
+              const opts = (v.title || '').split(' / ').map(s => s.trim());
+              opts.forEach(opt => {
+                if (['Good', 'Great', 'Excellent', 'Flawless'].includes(opt)) condition = opt;
+                else if (opt.includes('GB') || opt.includes('TB')) storage = opt;
+                else if (opt.toLowerCase().includes('wifi') || opt.toLowerCase().includes('wi-fi') || opt.toLowerCase().includes('cellular') || opt.toLowerCase().includes('unlocked') || opt.toLowerCase().includes('verizon') || opt.toLowerCase().includes('t-mobile') || opt.toLowerCase().includes('at&t')) connectivity = opt;
+                else if (opt !== 'Default Title') color = opt;
               });
-              if (matchedImg) imgUrl = typeof matchedImg === 'string' ? matchedImg : matchedImg.src;
-            }
-            if (isPlugPromoImage(imgUrl)) {
-              imgUrl = availableItemImages[0] || '';
-            }
-            
-            colorImages = colorImages.filter((src: string) => !isPlugPromoImage(src));
+              
+              if (!color) color = "Default";
+              if (!storage) storage = "128GB";
+              if (!condition) condition = "Great";
+              
+              if (!colorOptionsMap.has(color)) {
+                let imgUrl = image;
+                const colorLower = color.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const rawItemImages = (item.images || []).map((img: any) => typeof img === 'string' ? img : img.src).filter(Boolean);
+                const availableItemImages = rawItemImages.filter((src: string) => !isPlugPromoImage(src));
+                
+                let colorImages = availableItemImages.filter((src: string) => {
+                    const s = src.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return s.includes(colorLower);
+                });
+                if (colorImages.length === 0) {
+                    colorImages = availableItemImages;
+                }
+                
+                if (item.images) {
+                  const matchedImg = item.images.find((img: any) => {
+                      const src = typeof img === 'string' ? img : img.src;
+                      return src && !isPlugPromoImage(src) && src.toLowerCase().replace(/[^a-z0-9]/g, '').includes(colorLower);
+                  });
+                  if (matchedImg) imgUrl = typeof matchedImg === 'string' ? matchedImg : matchedImg.src;
+                }
+                if (isPlugPromoImage(imgUrl)) {
+                  imgUrl = availableItemImages[0] || '';
+                }
+                
+                colorImages = colorImages.filter((src: string) => !isPlugPromoImage(src));
 
-            if (imgUrl && !isPlugPromoImage(imgUrl)) {
-              if (colorImages.includes(imgUrl)) {
-                colorImages = [imgUrl, ...colorImages.filter((s: string) => s !== imgUrl)];
+                if (imgUrl && !isPlugPromoImage(imgUrl)) {
+                  if (colorImages.includes(imgUrl)) {
+                    colorImages = [imgUrl, ...colorImages.filter((s: string) => s !== imgUrl)];
+                  } else {
+                    colorImages = [imgUrl, ...colorImages];
+                  }
+                }
+                
+                colorOptionsMap.set(color, {
+                  name: color,
+                  hex: colorToHex(color),
+                  image: isPlugPromoImage(imgUrl) ? '' : imgUrl,
+                  images: colorImages,
+                  storagesMap: new Map()
+                });
+              }
+              
+              const cData = colorOptionsMap.get(color);
+              if (!cData.storagesMap.has(storage)) {
+                cData.storagesMap.set(storage, {
+                    name: storage,
+                    connectivitiesMap: new Map(),
+                    conditionsMap: new Map()
+                });
+              }
+              
+              const sData = cData.storagesMap.get(storage);
+              if (connectivity) {
+                  if (!sData.connectivitiesMap.has(connectivity)) {
+                      sData.connectivitiesMap.set(connectivity, new Map());
+                  }
+                  const connData = sData.connectivitiesMap.get(connectivity);
+                  connData.set(condition, {
+                      name: condition,
+                      price: vPrice,
+                      available: v.available
+                  });
               } else {
-                colorImages = [imgUrl, ...colorImages];
+                  sData.conditionsMap.set(condition, {
+                      name: condition,
+                      price: vPrice,
+                      available: v.available
+                  });
               }
-            }
-            
-            colorOptionsMap.set(color, {
-              name: color,
-              hex: colorToHex(color),
-              image: isPlugPromoImage(imgUrl) ? '' : imgUrl,
-              images: colorImages,
-              storagesMap: new Map()
             });
           }
-          
-          const cData = colorOptionsMap.get(color);
-          if (!cData.storagesMap.has(storage)) {
-            cData.storagesMap.set(storage, {
-                name: storage,
-                connectivitiesMap: new Map(),
-                conditionsMap: new Map()
-            });
+
+          if (basePrice === Infinity) basePrice = 0;
+
+          const colorsArray = Array.from(colorOptionsMap.values()).map((c: any) => ({
+            name: c.name,
+            hex: c.hex,
+            image: c.image,
+            images: c.images && c.images.length > 0 ? c.images : [c.image],
+            storages: Array.from(c.storagesMap.values()).map((sData: any) => ({
+              name: sData.name,
+              connectivities: sData.connectivitiesMap.size > 0 ? Array.from(sData.connectivitiesMap.entries()).map(([cName, condMap]) => ({
+                 name: cName,
+                 conditions: Array.from(condMap.values())
+              })) : undefined,
+              conditions: sData.conditionsMap.size > 0 ? Array.from(sData.conditionsMap.values()) : undefined
+            }))
+          })).map(obj => JSON.stringify(obj));
+
+          if (colorsArray.length === 0) {
+            colorsArray.push('#000000', '#ffffff', '#ff0000');
           }
           
-          const sData = cData.storagesMap.get(storage);
-          if (connectivity) {
-              if (!sData.connectivitiesMap.has(connectivity)) {
-                  sData.connectivitiesMap.set(connectivity, new Map());
-              }
-              const connData = sData.connectivitiesMap.get(connectivity);
-              connData.set(condition, {
-                  name: condition,
-                  price: vPrice,
-                  available: v.available
-              });
-          } else {
-              sData.conditionsMap.set(condition, {
-                  name: condition,
-                  price: vPrice,
-                  available: v.available
-              });
-          }
-        });
-      }
-
-      if (basePrice === Infinity) basePrice = 0;
-
-      const colorsArray = Array.from(colorOptionsMap.values()).map((c: any) => ({
-        name: c.name,
-        hex: c.hex,
-        image: c.image,
-        images: c.images && c.images.length > 0 ? c.images : [c.image],
-        storages: Array.from(c.storagesMap.values()).map((sData: any) => ({
-          name: sData.name,
-          connectivities: sData.connectivitiesMap.size > 0 ? Array.from(sData.connectivitiesMap.entries()).map(([cName, condMap]) => ({
-             name: cName,
-             conditions: Array.from(condMap.values())
-          })) : undefined,
-          conditions: sData.conditionsMap.size > 0 ? Array.from(sData.conditionsMap.values()) : undefined
-        }))
-      })).map(obj => JSON.stringify(obj));
-
-      if (colorsArray.length === 0) {
-        colorsArray.push('#000000', '#ffffff', '#ff0000');
-      }
-      
-      syncedProductNames.add(name);
+          syncedProductNames.add(name);
           
           const newProductData = {
             name,
@@ -629,57 +643,60 @@ app.get("/api/health", (req, res) => {
             price: basePrice,
             image,
             description,
-            colors: colorsArray, // Use static hex colors for UI visual dots for now
+            colors: colorsArray,
             accentColor
           };
 
-          const { data: existingProducts } = await supabase
-            .from('products')
-            .select('id')
-            .eq('name', name);
-          
-          const existingProduct = existingProducts?.[0];
-
-          if (!existingProduct) {
-            const { error: insertError } = await supabase
-              .from('products')
-              .insert([newProductData]);
-            
-            if (insertError) console.error("Insert error:", insertError.message);
-            else {
-              addedCount++;
-              addedItems.push({ name, brand, price: basePrice, image });
-            }
+          const existingId = existingProductMap.get(name);
+          if (!existingId) {
+            toInsertList.push(newProductData);
+            addedCount++;
+            addedItems.push({ name, brand, price: basePrice, image });
           } else {
-             const { error: updateError } = await supabase
-               .from('products')
-               .update(newProductData)
-               .eq('id', existingProduct.id);
-               
-             if (updateError) console.error("Update error:", updateError.message);
-             else {
-               updatedCount++;
-               updatedItems.push({ name, brand, price: basePrice, image });
-             }
+            toUpdateList.push({ ...newProductData, id: existingId });
+            updatedCount++;
+            updatedItems.push({ name, brand, price: basePrice, image });
           }
         }
       }
-      
+
+      // Execute batch operations
+      if (toDeleteIdsSet.size > 0) {
+        const idsToDelete = Array.from(toDeleteIdsSet);
+        const { error: delErr } = await supabase.from('products').delete().in('id', idsToDelete);
+        if (!delErr) deletedCount += idsToDelete.length;
+      }
+
+      if (toInsertList.length > 0) {
+        for (let i = 0; i < toInsertList.length; i += 50) {
+          const chunk = toInsertList.slice(i, i + 50);
+          const { error: insErr } = await supabase.from('products').insert(chunk);
+          if (insErr) console.error("Batch insert error:", insErr.message);
+        }
+      }
+
+      if (toUpdateList.length > 0) {
+        for (let i = 0; i < toUpdateList.length; i += 50) {
+          const chunk = toUpdateList.slice(i, i + 50);
+          const { error: upsertErr } = await supabase.from('products').upsert(chunk);
+          if (upsertErr) console.error("Batch upsert error:", upsertErr.message);
+        }
+      }
+
       // Clean up products no longer listed in active sync
-      const { data: allProducts, error: fetchAllError } = await supabase.from('products').select('id, name, brand, image');
-      
-      if (!fetchAllError && allProducts && syncedProductNames.size > 10) {
-        const toDelete = allProducts.filter((p: any) => !syncedProductNames.has(p.name));
-        if (toDelete.length > 0) {
-          const ids = toDelete.map((p: any) => p.id);
-          deletedItems = toDelete.map((p: any) => ({ name: p.name, brand: p.brand || '', image: p.image || '' }));
-          const { error: delErr } = await supabase.from('products').delete().in('id', ids);
+      if (existingProductsData && syncedProductNames.size > 10) {
+        const staleProducts = existingProductsData.filter((p: any) => !syncedProductNames.has(p.name) && !toDeleteIdsSet.has(p.id));
+        if (staleProducts.length > 0) {
+          const staleIds = staleProducts.map((p: any) => p.id);
+          deletedItems = staleProducts.map((p: any) => ({ name: p.name, brand: p.brand || '', image: p.image || '' }));
+          const { error: delErr } = await supabase.from('products').delete().in('id', staleIds);
           if (!delErr) {
-            deletedCount += ids.length;
+            deletedCount += staleIds.length;
           } else {
             console.error("Error deleting stale products:", delErr.message);
           }
-        }      }
+        }
+      }
 
       const syncLog = {
         id: `sync_${Date.now()}`,
