@@ -60,7 +60,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
     setIsFetchingLogs(true);
     setSyncLogsWarning(null);
     try {
-      const res = await fetch('/api/sync-logs');
+      const res = await fetch(`/api/sync-logs?_t=${Date.now()}`);
       if (res.ok) {
         const data = await parseSafeJson(res);
         if (data.warning) {

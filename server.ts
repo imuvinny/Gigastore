@@ -344,7 +344,7 @@ app.get("/api/health", (req, res) => {
         deletedItems: l.deleted_items || [],
         errorMessage: l.error_message
       }));
-      res.json({ success: true, logs: formattedLogs });
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate"); res.json({ success: true, logs: formattedLogs });
     } catch (e: any) {
       console.error("Error fetching sync logs:", e);
       res.status(500).json({ error: e.message || 'Failed to fetch sync logs' });
