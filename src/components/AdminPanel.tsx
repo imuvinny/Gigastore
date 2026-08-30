@@ -42,6 +42,19 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
   const [isFetchingLogs, setIsFetchingLogs] = useState(false);
   const [syncLogsWarning, setSyncLogsWarning] = useState<string | null>(null);
 
+  // Helper for safe JSON parsing from API responses
+  const parseSafeJson = async (res: Response) => {
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      if (!res.ok) {
+        throw new Error(`Server returned error status (${res.status}): ${text.slice(0, 100) || res.statusText}`);
+      }
+      throw new Error(`Received non-JSON response from server.`);
+    }
+  };
+
   // Fetch sync logs function
   const fetchLogs = async () => {
     setIsFetchingLogs(true);
@@ -49,7 +62,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
     try {
       const res = await fetch('/api/sync-logs');
       if (res.ok) {
-        const data = await res.json();
+        const data = await parseSafeJson(res);
         if (data.warning) {
           setSyncLogsWarning(data.warning);
         }
@@ -57,8 +70,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
           setSyncLogs(data.logs);
         }
       } else {
-        const errData = await res.json().catch(() => ({}));
-        console.error('Failed to fetch sync logs:', errData.error || res.statusText);
+        console.error('Failed to fetch sync logs. Status:', res.status);
       }
     } catch (e) {
       console.error('Failed to fetch sync logs:', e);
@@ -185,13 +197,12 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
   };
 
   const handleSync = async () => {
-    
     setIsSyncing(true);
     try {
       const response = await fetch('/api/sync', { method: 'POST' }).catch((err) => {
         throw new Error('Network error during sync execution.');
       });
-      const data = await response.json();
+      const data = await parseSafeJson(response);
       if (data.success) {
         if (data.syncLog) {
           setSyncLogs(prev => [data.syncLog, ...prev]);
@@ -200,10 +211,14 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
         }
         // Fetch fresh products from Supabase
         if (supabase) {
-          const { data: freshProducts } = await supabase.from('products').select('*');
-          if (freshProducts) {
-            setEditingProducts(freshProducts);
-            setProducts(freshProducts);
+          try {
+            const { data: freshProducts } = await supabase.from('products').select('*');
+            if (freshProducts) {
+              setEditingProducts(freshProducts);
+              setProducts(freshProducts);
+            }
+          } catch (spErr) {
+            console.error('Error fetching fresh products from Supabase:', spErr);
           }
         }
       } else {
