@@ -463,6 +463,8 @@ app.get("/api/health", (req, res) => {
         }
       };
 
+      let anyFetchFailed = false;
+
       const collectionFetches = collections.map(async (collection) => {
         try {
           const response = await fetch(`https://www.plug.tech/collections/${collection}/products.json?limit=250&currency=ZMW`, { 
@@ -471,13 +473,17 @@ app.get("/api/health", (req, res) => {
               "Accept": "application/json",
               "Cookie": "cart_currency=ZMW"
             },
-            signal: AbortSignal.timeout(4000)
+            signal: AbortSignal.timeout(3000)
           });
 
-          if (!response.ok) return { collection, products: [] };
+          if (!response.ok) {
+            anyFetchFailed = true;
+            return { collection, products: [] };
+          }
           const data = await response.json();
           return { collection, products: data.products || [] };
         } catch (err) {
+          anyFetchFailed = true;
           return { collection, products: [] };
         }
       });
@@ -708,8 +714,9 @@ app.get("/api/health", (req, res) => {
         const idsToDelete = Array.from(toDeleteIdsSet);
         dbTasks.push(
           supabase.from('products').delete().in('id', idsToDelete).then(({ error }) => {
-            if (!error) deletedCount += idsToDelete.length;
-          })
+            if (error) throw new Error(error.message);
+            deletedCount += idsToDelete.length;
+          }).catch((err: any) => { console.error("DB delete err:", err); throw err; })
         );
       }
 
@@ -718,8 +725,8 @@ app.get("/api/health", (req, res) => {
           const chunk = toInsertList.slice(i, i + 100);
           dbTasks.push(
             supabase.from('products').insert(chunk).then(({ error }) => {
-              if (error) console.error("Batch insert error:", error.message);
-            })
+              if (error) throw new Error(error.message);
+            }).catch((err: any) => { console.error("DB insert err:", err); throw err; })
           );
         }
       }
@@ -729,29 +736,36 @@ app.get("/api/health", (req, res) => {
           const chunk = toUpdateList.slice(i, i + 100);
           dbTasks.push(
             supabase.from('products').upsert(chunk).then(({ error }) => {
-              if (error) console.error("Batch upsert error:", error.message);
-            })
+              if (error) throw new Error(error.message);
+            }).catch((err: any) => { console.error("DB upsert err:", err); throw err; })
           );
         }
       }
 
       // Clean up products no longer listed in active sync
       let staleProducts: any[] = [];
-      if (existingProductsData && syncedProductNames.size > 10) {
+      if (!anyFetchFailed && existingProductsData && syncedProductNames.size > 10) {
         staleProducts = existingProductsData.filter((p: any) => !syncedProductNames.has(p.name) && !toDeleteIdsSet.has(p.id));
         if (staleProducts.length > 0) {
           const staleIds = staleProducts.map((p: any) => p.id);
           deletedItems = staleProducts.map((p: any) => ({ name: p.name, brand: p.brand || '', image: p.image || '' }));
           dbTasks.push(
             supabase.from('products').delete().in('id', staleIds).then(({ error }) => {
-              if (!error) deletedCount += staleIds.length;
-            })
+              if (error) throw new Error(error.message);
+              deletedCount += staleIds.length;
+            }).catch((err: any) => { console.error("DB delete stale err:", err); throw err; })
           );
         }
       }
 
       // Execute all DB tasks concurrently in parallel!
-      await Promise.all(dbTasks);
+      const syncPromise = Promise.all(dbTasks.map(p => p.catch(e => { console.error("Caught DB error:", e); return e; })));
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve("TIMEOUT"), 4000));
+      const raceResult = await Promise.race([syncPromise, timeoutPromise]);
+      
+      if (raceResult === "TIMEOUT") {
+        console.warn("DB tasks took too long. Responding early to avoid Vercel 500 timeout.");
+      }
 
       const syncLog = {
         id: `sync_${Date.now()}`,
