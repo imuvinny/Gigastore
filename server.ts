@@ -718,7 +718,7 @@ app.get("/api/health", (req, res) => {
           supabase.from('products').delete().in('id', idsToDelete).then(({ error }) => {
             if (error) throw new Error(error.message);
             deletedCount += idsToDelete.length;
-          }).catch((err: any) => { console.error("DB delete err:", err); throw err; })
+          }).catch((err: any) => { console.error("DB delete err:", err); return err; })
         );
       }
 
@@ -728,7 +728,7 @@ app.get("/api/health", (req, res) => {
           dbTasks.push(
             supabase.from('products').insert(chunk).then(({ error }) => {
               if (error) throw new Error(error.message);
-            }).catch((err: any) => { console.error("DB insert err:", err); throw err; })
+            }).catch((err: any) => { console.error("DB insert err:", err); return err; })
           );
         }
       }
@@ -739,7 +739,7 @@ app.get("/api/health", (req, res) => {
           dbTasks.push(
             supabase.from('products').upsert(chunk).then(({ error }) => {
               if (error) throw new Error(error.message);
-            }).catch((err: any) => { console.error("DB upsert err:", err); throw err; })
+            }).catch((err: any) => { console.error("DB upsert err:", err); return err; })
           );
         }
       }
@@ -755,14 +755,14 @@ app.get("/api/health", (req, res) => {
             supabase.from('products').delete().in('id', staleIds).then(({ error }) => {
               if (error) throw new Error(error.message);
               deletedCount += staleIds.length;
-            }).catch((err: any) => { console.error("DB delete stale err:", err); throw err; })
+            }).catch((err: any) => { console.error("DB delete stale err:", err); return err; })
           );
         }
       }
 
       // Execute all DB tasks concurrently in parallel!
-      const syncPromise = Promise.all(dbTasks.map(p => p.catch(e => { console.error("Caught DB error:", e); return e; })));
-      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve("TIMEOUT"), 8000));
+      const syncPromise = Promise.all(dbTasks);
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve("TIMEOUT"), 7000));
       const raceResult = await Promise.race([syncPromise, timeoutPromise]);
       
       if (raceResult === "TIMEOUT") {
@@ -781,8 +781,8 @@ app.get("/api/health", (req, res) => {
         deletedItems: deletedItems.slice(0, 50)
       };
       
-      // Save sync log without blocking
-      saveSyncLogToDb(syncLog).catch(e => console.error("Sync log save error:", e));
+      // Save sync log and AWAIT it so Vercel doesn't kill the container before it finishes!
+      await saveSyncLogToDb(syncLog).catch(e => console.error("Sync log save error:", e));
 
       res.json({ 
         success: true, 
