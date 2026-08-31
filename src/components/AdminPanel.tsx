@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Database, Image as ImageIcon, Save, Terminal, Upload, 
   LayoutDashboard, Trash2, Menu, LogOut, History, Sparkles, 
-  Search, ArrowUpDown, Filter, Eye, CheckCircle2, AlertCircle, Plus, Settings, RefreshCw 
+  Search, ArrowUpDown, Filter, Eye, CheckCircle2, AlertCircle, Plus, Settings 
 } from 'lucide-react';
 import { Product, Slide, SyncLog } from '../types';
 import { supabase } from '../lib/supabase';
@@ -39,49 +39,24 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
   const [catalogSearch, setCatalogSearch] = useState('');
   const [catalogSort, setCatalogSort] = useState<'newest' | 'oldest' | 'name_asc' | 'name_desc' | 'price_high' | 'price_low'>('newest');
   const [showNewlyAddedOnly, setShowNewlyAddedOnly] = useState(false);
-  const [isFetchingLogs, setIsFetchingLogs] = useState(false);
-  const [syncLogsWarning, setSyncLogsWarning] = useState<string | null>(null);
 
-  // Helper for safe JSON parsing from API responses
-  const parseSafeJson = async (res: Response) => {
-    const text = await res.text();
-    try {
-      return JSON.parse(text);
-    } catch {
-      if (!res.ok) {
-        throw new Error(`Server returned error status (${res.status}): ${text.slice(0, 100) || res.statusText}`);
-      }
-      throw new Error(`Received non-JSON response from server.`);
-    }
-  };
-
-  // Fetch sync logs function
-  const fetchLogs = async () => {
-    setIsFetchingLogs(true);
-    setSyncLogsWarning(null);
-    try {
-      const res = await fetch(`/api/sync-logs?_t=${Date.now()}`);
-      if (res.ok) {
-        const data = await parseSafeJson(res);
-        if (data.warning) {
-          setSyncLogsWarning(data.warning);
-        }
-        if (data.success && Array.isArray(data.logs)) {
-          setSyncLogs(data.logs);
-        }
-      } else {
-        console.error('Failed to fetch sync logs. Status:', res.status);
-      }
-    } catch (e) {
-      console.error('Failed to fetch sync logs:', e);
-    } finally {
-      setIsFetchingLogs(false);
-    }
-  };
-
+  // Fetch sync logs on mount
   useEffect(() => {
+    async function fetchLogs() {
+      try {
+        const res = await fetch('/api/sync-logs');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.logs)) {
+            setSyncLogs(data.logs);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch sync logs:', e);
+      }
+    }
     fetchLogs();
-  }, [activeTab]);
+  }, []);
 
   const handleLogout = async () => {
     if (supabase) {
@@ -197,75 +172,35 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
   };
 
   const handleSync = async () => {
+    
     setIsSyncing(true);
     try {
-      const collections = [
-        "apple-iphones", "apple-watches", "apple-ipads", "macbooks", 
-        "airpods", "headphones", "androids", "accessories"
-      ];
-      
-      let totalAdded = 0;
-      let totalUpdated = 0;
-      let totalDeleted = 0;
-      let combinedSyncLog: any = null;
-      
-      // We will sync collections one by one to stay under Vercel's 10-second timeout limit
-      for (const collection of collections) {
-        const response = await fetch('/api/sync', { 
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({ collection })
-        }).catch((err) => {
-          throw new Error(`Network error during sync of ${collection}.`);
-        });
-        
-        const data = await parseSafeJson(response);
-        if (data.success) {
-           totalAdded += data.addedCount || 0;
-           totalUpdated += data.updatedCount || 0;
-           totalDeleted += data.deletedCount || 0;
-           if (data.syncLog) {
-             // For simplicity we just capture the very last sync log for the modal, or combine them
-             combinedSyncLog = data.syncLog; 
-             setSyncLogs(prev => [data.syncLog, ...prev]);
-           }
-        } else {
-           console.error(`Sync failed for ${collection}:`, data.error);
-           alert(`Sync failed for ${collection}: ` + (data.error || 'Unknown error'));
-           return; // Abort the remaining collections if one fails
+      const response = await fetch('/api/sync', { method: 'POST' }).catch((err) => {
+        throw new Error('Network error during sync execution.');
+      });
+      const data = await response.json();
+      if (data.success) {
+        if (data.syncLog) {
+          setSyncLogs(prev => [data.syncLog, ...prev]);
+          // Open detailed sync modal right away!
+          setSelectedSyncLogModal(data.syncLog);
         }
-      }
-      
-      if (combinedSyncLog) {
-         // Create a synthetic combined log for the modal display
-         const megaLog = {
-           ...combinedSyncLog,
-           addedCount: totalAdded,
-           updatedCount: totalUpdated,
-           deletedCount: totalDeleted,
-           id: `mega_sync_${Date.now()}`
-         };
-         setSelectedSyncLogModal(megaLog);
-      }
-
-      // Fetch fresh products from Supabase
-      if (supabase) {
-        try {
+        // Fetch fresh products from Supabase
+        if (supabase) {
           const { data: freshProducts } = await supabase.from('products').select('*');
           if (freshProducts) {
             setEditingProducts(freshProducts);
             setProducts(freshProducts);
           }
-        } catch (spErr) {
-          console.error('Error fetching fresh products from Supabase:', spErr);
         }
+      } else {
+        console.error('Sync failed: ' + data.error);
       }
     } catch (error: any) {
-      alert('Error triggering sync bot: ' + (error.message || 'Unknown error'));
       console.error('Error syncing:', error);
+      console.error('Error triggering sync bot: ' + (error.message || 'Unknown error'));
     } finally {
       setIsSyncing(false);
-      await fetchLogs();
     }
   };
 
@@ -496,13 +431,6 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                   <div className="text-xs font-bold bg-gray-100 px-3 py-1.5 rounded-xl text-gray-700">
                     Total Sessions: {syncLogs.length}
                   </div>
-                  <button 
-                    onClick={fetchLogs}
-                    disabled={isFetchingLogs}
-                    className="text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    <RefreshCw size={14} className={isFetchingLogs ? "animate-spin" : ""} /> Refresh
-                  </button>
                   {syncLogs.length > 0 && (
                     <button 
                       onClick={async () => {
@@ -527,15 +455,6 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                   )}
                 </div>
               </div>
-
-              {syncLogsWarning && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs flex items-start gap-2.5">
-                  <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold">Configuration Notice:</span> {syncLogsWarning}
-                  </div>
-                </div>
-              )}
 
               {syncLogs.length === 0 ? (
                 <div className="text-center py-16 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
