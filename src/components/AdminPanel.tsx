@@ -73,49 +73,65 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
         let hasError = false;
         let errorMessage = '';
 
-        for (const p of editingProducts) {
-          const pClean = { ...p };
-          delete pClean.manualMarginZMW;
-          const { error } = await supabase.from('products').upsert(pClean);
-          if (error) {
-            hasError = true;
-            errorMessage = error.message;
-            console.error("Products error:", error);
+        if (activeTab === 'products') {
+          // Bulk upsert products in batches
+          const batchSize = 50;
+          for (let i = 0; i < editingProducts.length; i += batchSize) {
+            const batch = editingProducts.slice(i, i + batchSize).map(p => {
+              const pClean = { ...p };
+              delete pClean.manualMarginZMW;
+              return pClean;
+            });
+            const { error } = await supabase.from('products').upsert(batch);
+            if (error) {
+              hasError = true;
+              errorMessage = error.message;
+              console.error("Products error:", error);
+              break;
+            }
+            // Add a small delay to avoid rate limiting or payload limits
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          if (!hasError) {
+            setProducts(editingProducts);
           }
         }
         
-        // Handle deleted slides
-        const deletedSlides = slides.filter(s => !editingSlides.find(es => es.id === s.id));
-        for (const s of deletedSlides) {
-          const { error } = await supabase.from('slides').delete().eq('id', s.id);
-          if (error) {
-            console.error("Slide deletion error:", error);
+        if (activeTab === 'slides') {
+          // Handle deleted slides
+          const deletedSlides = slides.filter(s => !editingSlides.find(es => es.id === s.id));
+          for (const s of deletedSlides) {
+            const { error } = await supabase.from('slides').delete().eq('id', s.id);
+            if (error) {
+              console.error("Slide deletion error:", error);
+            }
+          }
+
+          if (editingSlides.length > 0) {
+            const { error } = await supabase.from('slides').upsert(editingSlides);
+            if (error) {
+              hasError = true;
+              errorMessage = error.message;
+              console.error("Slides error:", error);
+            }
+          }
+          if (!hasError) {
+            setSlides(editingSlides);
           }
         }
-
-        for (const s of editingSlides) {
-          const { error } = await supabase.from('slides').upsert(s);
-          if (error) {
-            hasError = true;
-            errorMessage = error.message;
-            console.error("Slides error:", error);
-          }
-        }
-
         
-        const { error: settingsError } = await supabase.from('settings').upsert({ key: 'social_links', value: editingSocialLinks });
-        if (settingsError) {
-           console.error("Settings error:", settingsError);
-           // Not a hard failure if table doesn't exist
-        } else if (setSocialLinks) {
-           setSocialLinks(editingSocialLinks);
+        if (activeTab === 'settings') {
+          const { error: settingsError } = await supabase.from('settings').upsert({ key: 'social_links', value: editingSocialLinks });
+          if (settingsError) {
+             console.error("Settings error:", settingsError);
+             hasError = true;
+          } else if (setSocialLinks) {
+             setSocialLinks(editingSocialLinks);
+          }
         }
 
         if (hasError) {
           console.error(`Error saving to Supabase: ${errorMessage}`);
-        } else {
-          setProducts(editingProducts);
-          setSlides(editingSlides);
         }
       } catch (e: any) {
         console.error("Error saving to Supabase:", e);
