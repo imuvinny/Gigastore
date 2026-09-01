@@ -343,7 +343,7 @@ export function ProductDetailsModal({ product, onClose, onAddToCart, wishlist, t
                   animate={{ opacity: 1, scale: 1.0 }}
                   exit={{ opacity: 0, scale: 0.94 }}
                   transition={{ duration: 0.35, ease: "easeOut" }}
-                  src={currentActiveImage}
+                  src={currentActiveImage || undefined}
                   alt={product.name}
                   className="w-[85%] h-[85%] md:w-[80%] md:h-[80%] object-contain mix-blend-multiply select-none"
                 />
@@ -376,7 +376,7 @@ export function ProductDetailsModal({ product, onClose, onAddToCart, wishlist, t
                       }`}
                     >
                       <img 
-                        src={img} 
+                        src={img || undefined} 
                         alt={`Thumbnail ${idx + 1}`}
                         className="w-full h-full object-contain mix-blend-multiply"
                       />

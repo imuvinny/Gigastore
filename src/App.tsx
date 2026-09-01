@@ -43,7 +43,7 @@ const SlideImage = ({ src }: { src: string }) => {
         animate={{ y: 0, opacity: loaded ? 1 : 0, scale: 1 }}
         exit={{ y: 100, opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        src={src}
+        src={src || undefined}
         onLoad={() => setLoaded(true)}
         className="w-[90%] md:w-full h-[90%] md:h-full object-contain object-bottom mix-blend-lighten drop-shadow-[0_0_80px_rgba(255,255,255,0.15)] origin-bottom md:pr-12 pb-4 md:pb-0"
       />
@@ -703,7 +703,7 @@ export default function App() {
                     <div onClick={() => setSelectedProduct(product)} className="w-full aspect-[4/5] bg-white rounded-3xl mb-4 sm:mb-8 p-2 flex items-center justify-center relative overflow-hidden cursor-pointer shadow-[0_0_40px_rgba(0,0,0,0.5)] border border-white/5">
 
                        <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-700" style={{ background: product.accentColor }} />
-                       <img src={product.image} alt={product.name} className="w-[90%] h-[90%] object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-700 ease-out relative z-10" />
+                       <img src={product.image || undefined} alt={product.name} className="w-[90%] h-[90%] object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-700 ease-out relative z-10" />
                     </div>
                   <h3 onClick={() => setSelectedProduct(product)} className="text-base sm:text-xl font-bold text-white mb-1 sm:mb-2 tracking-tight cursor-pointer hover:text-white/80 transition-colors line-clamp-2 min-h-[3rem] sm:min-h-0 flex items-center justify-center">{product.name}</h3>
                   <p className="text-neutral-400 font-semibold text-sm sm:text-lg mb-4 sm:mb-8">{formatProductZMW(product, getDisplayPriceUSD(product.price))}</p>

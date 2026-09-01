@@ -339,17 +339,6 @@ app.get("/api/health", (req, res) => {
     }
 
     try {
-      const collections = [
-        "apple-iphones",
-        "apple-watches",
-        "apple-ipads",
-        "macbooks",
-        "airpods",
-        "headphones",
-        "androids",
-        "accessories"
-      ];
-      
       let addedCount = 0;
       let updatedCount = 0;
       let deletedCount = 0;
@@ -366,14 +355,14 @@ app.get("/api/health", (req, res) => {
            if (erData && erData.rates && erData.rates.ZMW) {
                exchangeRate = erData.rates.ZMW;
                if (exchangeRate < 19) {
-                 exchangeRate = 20.05; 
-               }
+                 exchangeRate = 20.05;
+                }
            }
         }
       } catch (e) {
         console.error("Failed to fetch exchange rate", e);
       }
-
+      
       const getProfitMarginZMW = (p: { name: string; brand?: string; price?: number }) => {
         const n = (p.name || '').toLowerCase();
         const c = (p.brand || '').toLowerCase();
@@ -388,7 +377,6 @@ app.get("/api/health", (req, res) => {
           if (price >= 900 && price < 1000) return 250;
           return 400; // >= 1000
         }
-
         if (n.includes('macbook') || n.includes('laptop') || n.includes('pc') || c.includes('macbook') || c.includes('laptop')) return 2000;
         if (n.includes('ipad') || n.includes('tablet') || n.includes('galaxy tab') || c.includes('ipad') || c.includes('tablet')) return 500;
         if (n.includes('speaker') || n.includes('pill') || n.includes('flip') || c.includes('speaker')) return 400;
@@ -402,9 +390,11 @@ app.get("/api/health", (req, res) => {
         return 100;
       };
 
-      for (const collection of collections) {
-        console.log(`Fetching from collection: ${collection}`);
-        const response = await fetch(`https://www.plug.tech/collections/${collection}/products.json?limit=250&currency=ZMW`, { 
+      let page = 1;
+      let hasMore = true;
+      while (hasMore) {
+        console.log(`Fetching page: ${page}`);
+        const response = await fetch(`https://www.plug.tech/products.json?limit=250&page=${page}&currency=ZMW`, { 
           headers: { 
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36", 
             "Accept": "application/json",
@@ -413,7 +403,7 @@ app.get("/api/health", (req, res) => {
         });
 
         if (!response.ok) {
-          console.error(`Failed to fetch ${collection}: ${response.statusText}`);
+          console.error(`Failed to fetch page ${page}: ${response.statusText}`);
           continue;
         }
         
@@ -443,32 +433,36 @@ app.get("/api/health", (req, res) => {
           const cleanItemImages = rawAllImages.filter((src: string) => !isPlugPromoImage(src));
           const image = cleanItemImages.length > 0 ? cleanItemImages[0] : '';
           const description = (item.body_html || item.description || '').replace(/(<([^>]+)?>)/gi, "");
-          const brandMap: Record<string, string> = {
-            "apple-iphones": "Apple Phones",
-            "apple-watches": "Apple Watches",
-            "apple-ipads": "iPads",
-            "macbooks": "MacBooks",
-            "airpods": "AirPods",
-            "headphones": "Headphones",
-            "androids": "Samsung Phones",
-            "accessories": "Accessories"
-          };
-          let brand = brandMap[collection] || 'Other';
-          if (collection === 'androids') {
-            if (item.vendor === 'Google' || name.includes('Pixel')) {
-              brand = 'Google Phones';
-            } else if (item.vendor === 'Samsung' || name.includes('Galaxy')) {
-              brand = 'Samsung Phones';
-            } else {
-              brand = 'Android Phones';
-            }
-          } else if (collection === 'headphones' || collection === 'airpods') {
-            const t = name.toLowerCase();
-            if (t.includes('speaker') || t.includes('pill') || item.vendor === 'JBL') {
-              brand = 'Speakers';
-            } else if (item.vendor === 'Beats') {
-              brand = 'Headphones';
-            }
+                    let brand = 'Other';
+          const v = item.vendor || '';
+          const t = item.product_type || '';
+          if (v === 'Apple') {
+            if (t === 'Phone' || t === 'Combined Listing' || name.includes('iPhone')) brand = 'Apple Phones';
+            else if (t === 'Computer' || name.includes('MacBook')) brand = 'MacBooks';
+            else if (t === 'Tablet' || name.includes('iPad')) brand = 'iPads';
+            else if (t === 'Hearable' || name.includes('AirPods')) brand = 'AirPods';
+            else if (t === 'Wearable' || name.includes('Watch')) brand = 'Apple Watches';
+            else if (t === 'Accessory' || t === 'Case') brand = 'Accessories';
+          } else if (v === 'Samsung') {
+            if (t === 'Tablet' || name.includes('Tab')) brand = 'Samsung Tablets';
+            else brand = 'Samsung Phones';
+          } else if (v === 'Google') {
+            brand = 'Google Phones';
+          } else if (t === 'Hearable') {
+            if (name.includes('speaker') || name.includes('pill') || v === 'JBL') brand = 'Speakers';
+            else brand = 'Headphones';
+          } else if (t === 'Accessory' || t === 'Case' || t === 'Screen Protector') {
+            brand = 'Accessories';
+          }
+          
+          if (brand === 'Other') {
+            if (name.includes('iPhone')) brand = 'Apple Phones';
+            else if (name.includes('MacBook')) brand = 'MacBooks';
+            else if (name.includes('iPad')) brand = 'iPads';
+            else if (name.includes('AirPods')) brand = 'AirPods';
+            else if (name.includes('Watch')) brand = 'Apple Watches';
+            else if (name.includes('Galaxy')) brand = 'Samsung Phones';
+            else if (name.includes('Pixel')) brand = 'Google Phones';
           }
           const accentColor = '#3ecf8e';
 
@@ -490,14 +484,6 @@ app.get("/api/health", (req, res) => {
       };
 
       const availableVariants = (item.variants || []).filter((v: any) => v.available !== false);
-      if (availableVariants.length === 0 && item.variants && item.variants.length > 0) {
-        const { data: existing } = await supabase.from('products').select('id').eq('name', name);
-        if (existing && existing.length > 0) {
-          await supabase.from('products').delete().eq('id', existing[0].id);
-          deletedCount++;
-        }
-        continue;
-      }
 
       const colorOptionsMap = new Map();
       let basePrice = Infinity;
@@ -663,6 +649,11 @@ app.get("/api/health", (req, res) => {
              }
           }
         }
+        if (products.length < 250) {
+          hasMore = false;
+        } else {
+          page++;
+        }
       }
       
       // Clean up products no longer listed in active sync
@@ -673,11 +664,16 @@ app.get("/api/health", (req, res) => {
         if (toDelete.length > 0) {
           const ids = toDelete.map((p: any) => p.id);
           deletedItems = toDelete.map((p: any) => ({ name: p.name, brand: p.brand || '', image: p.image || '' }));
-          const { error: delErr } = await supabase.from('products').delete().in('id', ids);
-          if (!delErr) {
-            deletedCount += ids.length;
-          } else {
-            console.error("Error deleting stale products:", delErr.message);
+          let delErr = null;
+          for (let i = 0; i < ids.length; i += 100) {
+            const chunk = ids.slice(i, i + 100);
+            const { error: e } = await supabase.from('products').delete().in('id', chunk);
+            if (e) {
+              delErr = e;
+              console.error("Error deleting stale products chunk:", e.message);
+            } else {
+              deletedCount += chunk.length;
+            }
           }
         }      }
 

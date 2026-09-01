@@ -168,7 +168,7 @@ export function SyncLogModal({ syncLog, onClose, onFilterCatalog }: SyncLogModal
                   >
                     <div className="w-14 h-14 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center overflow-hidden shrink-0 p-1">
                       {item.image ? (
-                        <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform" />
+                        <img src={item.image || undefined} alt={item.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform" />
                       ) : (
                         <Tag size={20} className="text-gray-300" />
                       )}

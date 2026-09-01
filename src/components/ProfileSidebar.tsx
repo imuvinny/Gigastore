@@ -156,7 +156,7 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
             <div className="relative group">
               <div className="w-12 h-12 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-black overflow-hidden relative">
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={profile.avatar_url || undefined} alt="Profile" className="w-full h-full object-cover" />
                 ) : getInitials() ? (
                   <span className="text-sm font-bold text-gray-600">{getInitials()}</span>
                 ) : (
@@ -303,7 +303,7 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
                           }}
                         >
                           <div className="w-16 h-16 bg-gray-50 rounded-xl border border-black/5 p-2 flex-shrink-0">
-                            <img src={product.image} alt={product.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform" />
+                            <img src={product.image || undefined} alt={product.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform" />
                           </div>
                           <div className="flex-1">
                             <h4 className="text-sm font-bold text-black line-clamp-2">{product.name}</h4>
@@ -352,7 +352,7 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
                           <div className="flex gap-4 items-center">
                             {order.image_url ? (
                               <div className="w-16 h-16 bg-gray-50 rounded-xl border border-black/5 p-2 flex-shrink-0">
-                                <img src={order.image_url} alt={order.product_name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform" />
+                                <img src={order.image_url || undefined} alt={order.product_name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform" />
                               </div>
                             ) : (
                               <div className="w-16 h-16 bg-gray-50 rounded-xl border border-black/5 p-2 flex-shrink-0 flex items-center justify-center text-gray-400">

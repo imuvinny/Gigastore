@@ -485,7 +485,7 @@ export function CartSidebar({ cart, user, onClose, onUpdateQuantity, onRemove, o
                       <div className="flex gap-4">
                         <div className="w-20 h-20 bg-gray-50 rounded-xl flex items-center justify-center p-2 shrink-0 border border-gray-100 relative overflow-hidden">
                           <div className="absolute inset-0 opacity-10" style={{ background: item.accentColor }} />
-                          <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply relative z-10" />
+                          <img src={item.image || undefined} alt={item.name} className="w-full h-full object-contain mix-blend-multiply relative z-10" />
                         </div>
                         <div className="flex-1 py-1 flex flex-col min-w-0">
                           <div className="flex justify-between items-start mb-1">
@@ -540,7 +540,7 @@ export function CartSidebar({ cart, user, onClose, onUpdateQuantity, onRemove, o
                                 <div key={bIdx} className="flex items-start gap-2.5">
                                   <div className="w-7 h-7 rounded-lg bg-white border border-neutral-200 p-0.5 flex items-center justify-center shrink-0">
                                     {bItem.image ? (
-                                      <img src={bItem.image} alt="" className="w-full h-full object-contain mix-blend-multiply" />
+                                      <img src={bItem.image || undefined} alt="" className="w-full h-full object-contain mix-blend-multiply" />
                                     ) : (
                                       <Package size={14} className="text-gray-400" />
                                     )}
@@ -831,7 +831,7 @@ export function CartSidebar({ cart, user, onClose, onUpdateQuantity, onRemove, o
                           <div className="relative w-14 h-14 bg-gray-50 border border-black/10 rounded-lg flex items-center justify-center p-2 shrink-0">
                             <span className="absolute -top-2 -right-2 bg-black text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold z-20">{item.quantity}</span>
                             <div className="absolute inset-0 opacity-10 rounded-lg" style={{ background: item.accentColor }} />
-                            <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply relative z-10" />
+                            <img src={item.image || undefined} alt={item.name} className="w-full h-full object-contain mix-blend-multiply relative z-10" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-bold text-sm text-black leading-snug truncate">{item.name}</h4>
@@ -862,7 +862,7 @@ export function CartSidebar({ cart, user, onClose, onUpdateQuantity, onRemove, o
                                   <div key={bIdx} className="flex items-start gap-2">
                                     <div className="w-6 h-6 rounded bg-white border border-black/10 p-0.5 flex items-center justify-center shrink-0">
                                       {bItem.image ? (
-                                        <img src={bItem.image} alt="" className="w-full h-full object-contain mix-blend-multiply" />
+                                        <img src={bItem.image || undefined} alt="" className="w-full h-full object-contain mix-blend-multiply" />
                                       ) : (
                                         <Package size={12} className="text-gray-400" />
                                       )}

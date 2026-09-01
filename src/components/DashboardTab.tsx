@@ -317,7 +317,7 @@ export function DashboardTab({ products }: DashboardTabProps) {
                return topSelling.map((item, index) => (
               <div key={index} className="flex items-center gap-4 bg-gray-50 p-3 rounded-2xl border border-gray-100 hover:bg-gray-100/80 transition-colors">
                 <div className="w-12 h-12 rounded-xl bg-white p-2 border border-gray-200 shrink-0 overflow-hidden flex items-center justify-center">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply" />
+                  <img src={item.image || undefined} alt={item.name} className="w-full h-full object-contain mix-blend-multiply" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h5 className="text-sm font-bold text-black truncate" title={item.name}>{item.name}</h5>

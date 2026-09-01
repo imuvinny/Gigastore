@@ -683,7 +683,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                             </td>
                             <td className="px-5 py-4">
                               <div className="w-12 h-12 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden p-1">
-                                {product.image && <img src={product.image} alt="preview" className="w-full h-full object-contain mix-blend-multiply" />}
+                                {product.image && <img src={product.image || undefined} alt="preview" className="w-full h-full object-contain mix-blend-multiply" />}
                               </div>
                             </td>
                             <td className="px-5 py-4 text-center">
@@ -916,7 +916,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                       
                       <div className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-center p-4 overflow-hidden mt-2" style={{ background: `radial-gradient(circle at 50% 50%, ${(slide.color || '#ffffff')}20 0%, transparent 100%)` }}>
                         {slide.image ? (
-                          <img src={slide.image} alt="preview" className="max-w-full max-h-[200px] object-contain drop-shadow-xl" />
+                          <img src={slide.image || undefined} alt="preview" className="max-w-full max-h-[200px] object-contain drop-shadow-xl" />
                         ) : (
                           <span className="text-gray-400 text-sm font-medium flex flex-col items-center gap-2">
                             <ImageIcon size={32} className="opacity-20" />
