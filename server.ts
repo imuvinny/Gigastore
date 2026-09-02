@@ -574,13 +574,13 @@ app.get("/api/health", (req, res) => {
               connData.set(condition, {
                   name: condition,
                   price: vPrice,
-                  available: true
+                  available: v.available
               });
           } else {
               sData.conditionsMap.set(condition, {
                   name: condition,
                   price: vPrice,
-                  available: true
+                  available: v.available
               });
           }
         });
