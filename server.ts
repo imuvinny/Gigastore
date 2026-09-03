@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 
@@ -347,7 +348,14 @@ app.get("/api/health", (req, res) => {
       const updatedItems: any[] = [];
       let deletedItems: any[] = [];
       
-      const { data: allExisting } = await supabase.from('products').select('id, name');
+      let allExisting: any[] = [];
+      let fetchExFrom = 0;
+      while (true) {
+        const { data: exChunk } = await supabase.from('products').select('id, name').range(fetchExFrom, fetchExFrom + 999);
+        if (!exChunk || exChunk.length === 0) break;
+        allExisting.push(...exChunk);
+        fetchExFrom += 1000;
+      }
       const existingMap = new Map((allExisting || []).map(p => [p.name, p.id]));
       let exchangeRate = 20.05; // Fallback rate
       try {
@@ -439,34 +447,28 @@ app.get("/api/health", (req, res) => {
                     let brand = 'Other';
           const v = item.vendor || '';
           const t = item.product_type || '';
-          if (v === 'Apple') {
-            if (t === 'Phone' || t === 'Combined Listing' || name.includes('iPhone')) brand = 'Apple Phones';
-            else if (t === 'Computer' || name.includes('MacBook')) brand = 'MacBooks';
-            else if (t === 'Tablet' || name.includes('iPad')) brand = 'iPads';
-            else if (t === 'Hearable' || name.includes('AirPods')) brand = 'AirPods';
-            else if (t === 'Wearable' || name.includes('Watch')) brand = 'Apple Watches';
-            else if (t === 'Accessory' || t === 'Case') brand = 'Accessories';
-          } else if (v === 'Samsung') {
+          
+          if (name.includes('iPad')) { brand = 'iPads'; }
+          else if (name.includes('MacBook')) { brand = 'MacBooks'; }
+          else if (name.includes('Watch')) { brand = 'Apple Watches'; }
+          else if (name.includes('AirPods') || name.toLowerCase().includes('earbuds') || name.toLowerCase().includes('buds') || name.toLowerCase().includes('headphones') || (t === 'Hearable' && !name.toLowerCase().includes('speaker') && !name.toLowerCase().includes('pill'))) { brand = 'AirPods'; }
+          else if (name.toLowerCase().includes('speaker') || name.toLowerCase().includes('pill')) { brand = 'Speakers'; }
+          else if (name.includes('iPhone') || (v === 'Apple' && (t === 'Phone' || t === 'Combined Listing'))) { brand = 'Apple Phones'; }
+          else if (v === 'Samsung' || name.includes('Galaxy')) {
             if (t === 'Tablet' || name.includes('Tab')) brand = 'Samsung Tablets';
             else brand = 'Samsung Phones';
-          } else if (v === 'Google') {
+          } else if (v === 'Google' || name.includes('Pixel')) {
             brand = 'Google Phones';
-          } else if (t === 'Hearable') {
-            if (name.includes('speaker') || name.includes('pill') || v === 'JBL') brand = 'Speakers';
-            else brand = 'Headphones';
           } else if (t === 'Accessory' || t === 'Case' || t === 'Screen Protector') {
             brand = 'Accessories';
           }
-          
-          if (brand === 'Other') {
-            if (name.includes('iPhone')) brand = 'Apple Phones';
-            else if (name.includes('MacBook')) brand = 'MacBooks';
-            else if (name.includes('iPad')) brand = 'iPads';
-            else if (name.includes('AirPods')) brand = 'AirPods';
-            else if (name.includes('Watch')) brand = 'Apple Watches';
-            else if (name.includes('Galaxy')) brand = 'Samsung Phones';
-            else if (name.includes('Pixel')) brand = 'Google Phones';
+          if (name.toLowerCase().includes('starter pack')) {
+            continue;
           }
+          if (syncedProductNames.has(name)) {
+            continue;
+          }
+          
           const accentColor = '#3ecf8e';
 
 // Extract colors, storages, conditions
@@ -488,11 +490,22 @@ app.get("/api/health", (req, res) => {
 
       const availableVariants = (item.variants || []).filter((v: any) => v.available !== false);
 
+      if (availableVariants.length === 0) {
+        if (existingMap.has(name)) {
+          await supabase.from('products').delete().eq('id', existingMap.get(name));
+          deletedCount++;
+          deletedItems.push({ name, brand, image });
+        }
+        continue;
+      }
+
       const colorOptionsMap = new Map();
       let basePrice = Infinity;
 
       if (item.variants) {
         item.variants.forEach((v: any) => {
+          if (v.available === false) return; // Skip sold out variants entirely to avoid cluttering UI
+
           let rawPlugZmw = typeof v.price === 'number' ? (v.price > 100000 ? v.price / 100 : v.price) : parseFloat(v.price);
           const margin = getProfitMarginZMW({ name: name, brand, price: rawPlugZmw });
           let vPrice = Math.round(rawPlugZmw) + margin; // Plug ZMW price + exact profit margin
@@ -630,6 +643,7 @@ app.get("/api/health", (req, res) => {
             updatedCount++;
             updatedItems.push({ name, brand, price: basePrice, image });
           } else {
+            newProductData.id = crypto.randomUUID();
             addedCount++;
             addedItems.push({ name, brand, price: basePrice, image });
           }
