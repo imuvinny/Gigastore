@@ -504,12 +504,10 @@ app.get("/api/health", (req, res) => {
 
       if (item.variants) {
         item.variants.forEach((v: any) => {
-          if (v.available === false) return; // Skip sold out variants entirely to avoid cluttering UI
-
           let rawPlugZmw = typeof v.price === 'number' ? (v.price > 100000 ? v.price / 100 : v.price) : parseFloat(v.price);
           const margin = getProfitMarginZMW({ name: name, brand, price: rawPlugZmw });
           let vPrice = Math.round(rawPlugZmw) + margin; // Plug ZMW price + exact profit margin
-          if (vPrice < basePrice) basePrice = vPrice;
+          if (vPrice < basePrice && v.available !== false) basePrice = vPrice;
           
           let color = null;
           let storage = null;

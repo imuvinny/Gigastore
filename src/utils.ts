@@ -109,14 +109,14 @@ export const getMinConditionPriceFromColors = (colors: string[] | undefined): nu
         if (st.connectivities && st.connectivities.length > 0) {
           st.connectivities.forEach(conn => {
             conn.conditions?.forEach(cond => {
-              if (cond.price != null && (minPrice === null || cond.price < minPrice)) {
+              if (cond.available !== false && cond.price != null && (minPrice === null || cond.price < minPrice)) {
                 minPrice = cond.price;
               }
             });
           });
         } else if (st.conditions) {
           st.conditions.forEach(cond => {
-            if (cond.price != null && (minPrice === null || cond.price < minPrice)) {
+            if (cond.available !== false && cond.price != null && (minPrice === null || cond.price < minPrice)) {
               minPrice = cond.price;
             }
           });

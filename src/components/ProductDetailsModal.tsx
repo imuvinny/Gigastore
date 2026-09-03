@@ -568,7 +568,7 @@ export function ProductDetailsModal({ product, onClose, onAddToCart, wishlist, t
                       <div className="text-xs text-gray-500 pr-4">{conditionDescriptions[cond.name] || 'Fully functional. Backed by an 8-month warranty.'}</div>
                     </div>
                     <div className={`font-bold whitespace-nowrap ${!cond.available ? 'text-gray-500' : selectedConditionData?.name === cond.name ? 'text-black' : 'text-black'}`}>
-                      {formatProductZMW(product, getDisplayPriceUSD(getEffectiveConditionPrice(product, cond.price, minVariantPrice)))}
+                      {!cond.available ? '' : formatProductZMW(product, getDisplayPriceUSD(getEffectiveConditionPrice(product, cond.price, minVariantPrice)))}
                     </div>
                   </button>
                 )) : fallbackConditions.map((cond) => (
