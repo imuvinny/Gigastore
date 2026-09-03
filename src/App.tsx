@@ -194,7 +194,7 @@ export default function App() {
   const [isFiltering, setIsFiltering] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
-  const categories = ["Apple Phones", "Samsung Phones", "Google Phones", "Android Phones", "Apple Watches", "iPads", "MacBooks", "AirPods", "Headphones", "Speakers", "Accessories"];
+  const categories = ["Apple Phones", "Samsung Phones", "Google Phones", "Android Phones", "Apple Watches", "iPads", "MacBooks", "AirPods", "Headphones", "Speakers", "Accessories", "Other"];
 
   useEffect(() => {
     async function fetchSyncLogs() {
@@ -250,11 +250,15 @@ export default function App() {
     filteredProducts = [...filteredProducts].sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  // Ensure accessories are always at the bottom
+  // Ensure accessories and other are always at the bottom
   filteredProducts = filteredProducts.sort((a, b) => {
-    const aIsAccessory = isAccessoryItem(a) ? 1 : 0;
-    const bIsAccessory = isAccessoryItem(b) ? 1 : 0;
-    return aIsAccessory - bIsAccessory;
+    const getSortWeight = (product: Product) => {
+      if (isAccessoryItem(product)) return 2;
+      if (product.brand === 'Other') return 1;
+      return 0;
+    };
+    
+    return getSortWeight(a) - getSortWeight(b);
   });
 
   useEffect(() => {

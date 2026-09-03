@@ -429,9 +429,9 @@ app.get("/api/health", (req, res) => {
         name = name.replace(/\bplug\b/ig, '').trim();
       }
           
-          // Exclude AirPods Max, Plugtech bags/sleeves, and mystery boxes as requested
+          // Exclude AirPods Max, Plugtech bags/sleeves, mystery boxes, and Boost Mobile connected packs as requested
           const lowerName = name.toLowerCase();
-          if (lowerName.includes('airpods max') || lowerName.includes('sleeve') || lowerName.includes('backpack') || lowerName.includes('mystery box')) {
+          if (lowerName.includes('airpods max') || lowerName.includes('sleeve') || lowerName.includes('backpack') || lowerName.includes('mystery box') || lowerName.includes('boost mobile') || lowerName.includes('connected pack')) {
             const { data: existing } = await supabase.from('products').select('id').eq('name', name);
             if (existing && existing.length > 0) {
               await supabase.from('products').delete().eq('id', existing[0].id);
@@ -447,20 +447,24 @@ app.get("/api/health", (req, res) => {
                     let brand = 'Other';
           const v = item.vendor || '';
           const t = item.product_type || '';
+          const lowerNameForCat = name.toLowerCase();
           
           if (name.includes('iPad')) { brand = 'iPads'; }
           else if (name.includes('MacBook')) { brand = 'MacBooks'; }
           else if (name.includes('Watch')) { brand = 'Apple Watches'; }
-          else if (name.includes('AirPods') || name.toLowerCase().includes('earbuds') || name.toLowerCase().includes('buds') || name.toLowerCase().includes('headphones') || (t === 'Hearable' && !name.toLowerCase().includes('speaker') && !name.toLowerCase().includes('pill'))) { brand = 'AirPods'; }
-          else if (name.toLowerCase().includes('speaker') || name.toLowerCase().includes('pill')) { brand = 'Speakers'; }
+          else if (name.includes('AirPods') || lowerNameForCat.includes('earpods')) { brand = 'AirPods'; }
+          else if (lowerNameForCat.includes('headphones')) { brand = 'Headphones'; }
+          else if (t === 'Accessory' || t === 'Case' || t === 'Screen Protector' || lowerNameForCat.includes('case') || lowerNameForCat.includes('screen protector') || lowerNameForCat.includes('tempered glass')) {
+            brand = 'Accessories';
+          }
+          else if (lowerNameForCat.includes('earbuds') || lowerNameForCat.includes('buds') || (t === 'Hearable' && !lowerNameForCat.includes('speaker') && !lowerNameForCat.includes('pill'))) { brand = 'AirPods'; }
+          else if (lowerNameForCat.includes('speaker') || lowerNameForCat.includes('pill')) { brand = 'Speakers'; }
           else if (name.includes('iPhone') || (v === 'Apple' && (t === 'Phone' || t === 'Combined Listing'))) { brand = 'Apple Phones'; }
           else if (v === 'Samsung' || name.includes('Galaxy')) {
             if (t === 'Tablet' || name.includes('Tab')) brand = 'Samsung Tablets';
             else brand = 'Samsung Phones';
           } else if (v === 'Google' || name.includes('Pixel')) {
             brand = 'Google Phones';
-          } else if (t === 'Accessory' || t === 'Case' || t === 'Screen Protector') {
-            brand = 'Accessories';
           }
           if (name.toLowerCase().includes('starter pack')) {
             continue;
