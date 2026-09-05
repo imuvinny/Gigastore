@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Database, Image as ImageIcon, Save, Terminal, Upload, 
   LayoutDashboard, Trash2, Menu, LogOut, History, Sparkles, 
-  Search, ArrowUpDown, Filter, Eye, CheckCircle2, AlertCircle, Plus, Settings 
+  Search, ArrowUpDown, Filter, Eye, CheckCircle2, AlertCircle, Plus, Settings, Bell, Send 
 } from 'lucide-react';
-import { Product, Slide, SyncLog } from '../types';
+import { Product, Slide, SyncLog, Order } from '../types';
 import { supabase } from '../lib/supabase';
 import { DashboardTab } from './DashboardTab';
+import { AdminNotificationsTab } from './AdminNotificationsTab';
 import { SyncLogModal } from './SyncLogModal';
 import { formatProductZMW } from '../utils';
 
@@ -22,7 +23,7 @@ interface AdminPanelProps {
 }
 
 export function AdminPanel({ products, setProducts, slides, setSlides, onClose, socialLinks = {instagram:"", x:"", facebook:""}, setSocialLinks }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'slides' | 'sync_history' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'slides' | 'sync_history' | 'settings' | 'notifications'>('dashboard');
   const [editingProducts, setEditingProducts] = useState<Product[]>(products);
   const [editingSlides, setEditingSlides] = useState<Slide[]>(slides);
   const [editingSocialLinks, setEditingSocialLinks] = useState(socialLinks);
@@ -362,6 +363,14 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                       <History size={16} /> Sync Activity Log
                     </button>
                     <button
+                      onClick={() => { setActiveTab('notifications'); setIsMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 ${
+                        activeTab === 'notifications' ? 'bg-gray-50 text-black font-bold' : 'text-gray-600 hover:bg-gray-50 hover:text-black'
+                      }`}
+                    >
+                      <Bell size={16} /> Notifications
+                    </button>
+                    <button
                       onClick={() => { setActiveTab('slides'); setIsMenuOpen(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 ${
                         activeTab === 'slides' ? 'bg-gray-50 text-black font-bold' : 'text-gray-600 hover:bg-gray-50 hover:text-black'
@@ -391,7 +400,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
             </div>
             
             <h2 className="text-lg font-black tracking-tight text-black capitalize">
-              {activeTab === 'products' ? 'Products Catalog' : activeTab === 'sync_history' ? 'Sync Activity Log' : activeTab}
+              {activeTab === 'products' ? 'Products Catalog' : activeTab === 'sync_history' ? 'Sync Activity Log' : activeTab === 'notifications' ? 'Send Notifications' : activeTab}
             </h2>
           </div>
           
@@ -721,6 +730,10 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
             </div>
           )}
 
+
+          {activeTab === 'notifications' && (
+            <AdminNotificationsTab />
+          )}
 
           {activeTab === 'settings' && (
             <div className="space-y-6">

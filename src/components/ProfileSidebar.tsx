@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Heart, Search, ShoppingBag, LogOut, LogIn, User, Camera, LayoutDashboard, ChevronDown, ChevronUp, Package } from 'lucide-react';
+import { X, Heart, Search, ShoppingBag, LogOut, LogIn, User, Camera, LayoutDashboard, ChevronDown, ChevronUp, Package, Bell } from 'lucide-react';
 
 import { supabase } from '../lib/supabase';
-import { Product } from '../types';
+import { Product, Notification } from '../types';
 import { formatRawZMW, getOrderFinalZMW } from '../utils';
 
 interface ProfileSidebarProps {
@@ -27,10 +27,12 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
   const [uploading, setUploading] = useState(false);
   const [userAuth, setUserAuth] = useState<any>(user || null);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
-  const [expandedSection, setExpandedSection] = useState<'wishlist' | 'purchases' | 'searches' | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [expandedSection, setExpandedSection] = useState<'wishlist' | 'purchases' | 'searches' | 'notifications' | null>(null);
 
   useEffect(() => {
     let orderSubscription: any = null;
+    let notifSubscription: any = null;
 
     async function getUser() {
       if (!supabase) return;
@@ -48,9 +50,24 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
         };
         await fetchOrders();
         
+        const fetchNotifications = async () => {
+          if (!currentUser.email) return;
+          const { data: notifs } = await supabase.from('notifications')
+            .select('*')
+            .eq('customer_email', currentUser.email)
+            .order('created_at', { ascending: false });
+          if (notifs) setNotifications(notifs);
+        };
+        await fetchNotifications();
+
         orderSubscription = supabase.channel(`user-orders-${currentUser.id}-${Date.now()}`)
           .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${currentUser.id}` }, () => {
             fetchOrders();
+          }).subscribe();
+
+        notifSubscription = supabase.channel(`user-notifs-${currentUser.id}-${Date.now()}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `customer_email=eq.${currentUser.email}` }, () => {
+            fetchNotifications();
           }).subscribe();
 
         const { data } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
@@ -71,6 +88,9 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
     return () => {
       if (orderSubscription && supabase) {
         supabase.removeChannel(orderSubscription);
+      }
+      if (notifSubscription && supabase) {
+        supabase.removeChannel(notifSubscription);
       }
     };
   }, [user]);
@@ -237,6 +257,32 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
             </div>
           </div>
 
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-black/50 mb-4 flex items-center gap-2">
+              <Bell size={16} /> Notifications
+            </h3>
+            <div 
+              className="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
+              onClick={() => {
+                setExpandedSection('notifications');
+                // Mark all as read when opening
+                if (userEmail && notifications.some(n => !n.read)) {
+                  supabase.from('notifications').update({ read: true }).eq('customer_email', userEmail).then(() => {
+                    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                  });
+                }
+              }}
+            >
+              <div>
+                <p className="text-black font-medium">Inbox</p>
+                <p className="text-xs text-gray-500">Tap to view messages</p>
+              </div>
+              <div className={`w-8 h-8 rounded-full ${notifications.filter(n => !n.read).length > 0 ? 'bg-red-500' : 'bg-black'} text-white font-bold flex items-center justify-center text-sm shadow-sm`}>
+                {notifications.filter(n => !n.read).length || 0}
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <div className="p-6 border-t border-gray-100 bg-white">
@@ -282,13 +328,39 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
             >
               <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white">
                 <h2 className="text-xl font-black flex items-center gap-2 uppercase tracking-tight text-[#0f0c0c]">
-                  {expandedSection === 'wishlist' ? <><Heart className="text-black" /> Saved Items</> : expandedSection === 'purchases' ? <><Package className="text-black" /> My Orders</> : <><Search className="text-black" /> Recent Searches</>}
+                  {expandedSection === 'wishlist' ? <><Heart className="text-black" /> Saved Items</> : expandedSection === 'purchases' ? <><Package className="text-black" /> My Orders</> : expandedSection === 'notifications' ? <><Bell className="text-black" /> Notifications</> : <><Search className="text-black" /> Recent Searches</>}
                 </h2>
                 <button onClick={() => setExpandedSection(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                   <X size={20} />
                 </button>
               </div>
               <div className="overflow-y-auto p-6 bg-gray-50 flex-1">
+                {expandedSection === 'notifications' && (
+                  notifications.length > 0 ? (
+                    <div className="space-y-4">
+                      {notifications.map(notif => (
+                        <div key={notif.id} className="bg-white border border-gray-100 rounded-2xl p-5 flex gap-4">
+                          <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center shrink-0">
+                            <Bell size={18} className="text-black" />
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{new Date(notif.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <p className="text-sm text-black whitespace-pre-wrap">{notif.message}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center">
+                      <Bell size={32} className="mx-auto text-gray-300 mb-4" />
+                      <p className="text-black font-bold mb-2">No notifications yet</p>
+                      <p className="text-sm text-gray-500">When you receive updates, they will appear here.</p>
+                    </div>
+                  )
+                )}
+
                 {expandedSection === 'wishlist' && (
                   wishlist.length > 0 ? (
                     <div className="space-y-3">

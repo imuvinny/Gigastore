@@ -111,3 +111,11 @@ export interface CompanyEarning {
   currency: string;
   notes?: string;
 }
+
+export interface Notification {
+  id: string;
+  created_at: string;
+  customer_email: string;
+  message: string;
+  read: boolean;
+}
