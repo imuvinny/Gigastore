@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Heart, Search, ShoppingBag, LogOut, LogIn, User, Camera, LayoutDashboard, ChevronDown, ChevronUp, Package, Bell } from 'lucide-react';
+import { X, Heart, Search, ShoppingBag, LogOut, LogIn, User, Camera, LayoutDashboard, ChevronDown, ChevronUp, Package, Bell, Trash2 } from 'lucide-react';
 
 import { supabase } from '../lib/supabase';
 import { Product, Notification } from '../types';
@@ -29,6 +29,23 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [expandedSection, setExpandedSection] = useState<'wishlist' | 'purchases' | 'searches' | 'notifications' | null>(null);
+  
+  const [hiddenNotifIds, setHiddenNotifIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('hidden_notifs') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const handleHideNotification = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newHidden = [...hiddenNotifIds, id];
+    setHiddenNotifIds(newHidden);
+    localStorage.setItem('hidden_notifs', JSON.stringify(newHidden));
+  };
+
+  const visibleNotifications = notifications.filter(n => !hiddenNotifIds.includes(n.id));
 
   useEffect(() => {
     let orderSubscription: any = null;
@@ -277,8 +294,8 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
                 <p className="text-black font-medium">Inbox</p>
                 <p className="text-xs text-gray-500">Tap to view messages</p>
               </div>
-              <div className={`w-8 h-8 rounded-full ${notifications.filter(n => !n.read).length > 0 ? 'bg-red-500' : 'bg-black'} text-white font-bold flex items-center justify-center text-sm shadow-sm`}>
-                {notifications.filter(n => !n.read).length || 0}
+              <div className={`w-8 h-8 rounded-full ${visibleNotifications.filter(n => !n.read).length > 0 ? 'bg-red-500' : 'bg-black'} text-white font-bold flex items-center justify-center text-sm shadow-sm`}>
+                {visibleNotifications.filter(n => !n.read).length || 0}
               </div>
             </div>
           </div>
@@ -336,19 +353,26 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
               </div>
               <div className="overflow-y-auto p-6 bg-gray-50 flex-1">
                 {expandedSection === 'notifications' && (
-                  notifications.length > 0 ? (
+                  visibleNotifications.length > 0 ? (
                     <div className="space-y-4">
-                      {notifications.map(notif => (
-                        <div key={notif.id} className="bg-white border border-gray-100 rounded-2xl p-5 flex gap-4">
+                      {visibleNotifications.map(notif => (
+                        <div key={notif.id} className="bg-white border border-gray-100 rounded-2xl p-5 flex gap-4 items-start group">
                           <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center shrink-0">
                             <Bell size={18} className="text-black" />
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <div className="flex items-center justify-between mb-1">
                               <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{new Date(notif.created_at).toLocaleDateString()}</span>
                             </div>
-                            <p className="text-sm text-black whitespace-pre-wrap">{notif.message}</p>
+                            <p className="text-sm text-black whitespace-pre-wrap pr-4">{notif.message}</p>
                           </div>
+                          <button 
+                            onClick={(e) => handleHideNotification(notif.id, e)}
+                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors shrink-0 opacity-0 group-hover:opacity-100 md:opacity-100"
+                            title="Delete notification"
+                          >
+                            <Trash2 size={18} />
+                          </button>
                         </div>
                       ))}
                     </div>
