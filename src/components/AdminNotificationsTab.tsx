@@ -58,7 +58,10 @@ export function AdminNotificationsTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left column: User selection */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden p-6 flex flex-col h-[600px]">
-          <h4 className="font-bold text-md border-b pb-4 mb-4">Select Client</h4>
+          <h4 className="font-bold text-md border-b pb-4 mb-4 flex justify-between items-center">
+            <span>Select Client</span>
+            <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-semibold">{profiles.length} Users</span>
+          </h4>
           
           <div className="relative mb-4 shrink-0">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />

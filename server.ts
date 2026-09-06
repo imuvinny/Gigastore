@@ -402,6 +402,7 @@ app.get("/api/health", (req, res) => {
 
       let page = 1;
       let hasMore = true;
+      let retryCount = 0;
       while (hasMore) {
         console.log(`Fetching page: ${page}`);
         const response = await fetch(`https://www.plug.tech/products.json?limit=250&page=${page}&currency=ZMW`, { 
@@ -412,9 +413,26 @@ app.get("/api/health", (req, res) => {
           } 
         });
 
+        if (response.status === 429) {
+          retryCount++;
+          if (retryCount > 3) {
+             console.log(`Rate limited on page ${page} too many times. Giving up and proceeding with fetched products.`);
+             hasMore = false;
+             break;
+          }
+          const waitTime = retryCount * 5000;
+          console.log(`Rate limited on page ${page}. Waiting ${waitTime / 1000} seconds before retrying... (Attempt ${retryCount}/3)`);
+          await new Promise(r => setTimeout(r, waitTime));
+          continue;
+        }
+        
+        // Reset retryCount on success
+        retryCount = 0;
+
         if (!response.ok) {
           console.error(`Failed to fetch page ${page}: ${response.statusText}`);
-          continue;
+          hasMore = false;
+          break;
         }
         
         const data = await response.json();
@@ -465,6 +483,23 @@ app.get("/api/health", (req, res) => {
             else brand = 'Samsung Phones';
           } else if (v === 'Google' || name.includes('Pixel')) {
             brand = 'Google Phones';
+          } else if (
+             lowerNameForCat.includes('motorola') || 
+             lowerNameForCat.includes('razr') ||
+             lowerNameForCat.includes('moto') ||
+             lowerNameForCat.includes('tecno') || 
+             lowerNameForCat.includes('infinix') || 
+             lowerNameForCat.includes('nokia') ||
+             lowerNameForCat.includes('oneplus') ||
+             lowerNameForCat.includes('xiaomi') ||
+             lowerNameForCat.includes('oppo') ||
+             lowerNameForCat.includes('vivo') ||
+             v.toLowerCase() === 'motorola' ||
+             v.toLowerCase() === 'tecno' ||
+             v.toLowerCase() === 'infinix' ||
+             v.toLowerCase() === 'nokia'
+          ) {
+            brand = 'Android Phones';
           }
           if (name.toLowerCase().includes('starter pack')) {
             continue;
