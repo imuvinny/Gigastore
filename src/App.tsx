@@ -266,7 +266,7 @@ export default function App() {
     
     const fetchProfile = async (userId: string) => {
       try {
-        const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+        const { data } = await supabase.from('profiles').select('*, is_subadmin').eq('id', userId).single();
         if (data) {
           setProfile(data);
         }
@@ -858,6 +858,7 @@ export default function App() {
         {isProfileOpen && (
           <ProfileSidebar
             user={user}
+            isAdmin={user?.email?.toLowerCase() === 'vincentlewa6@gmail.com' || profile?.is_subadmin}
             onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)}
             onOpenAdmin={() => setIsAdminOpen(true)}
             onOpenAuth={() => setIsCustomerAuthOpen(true)}

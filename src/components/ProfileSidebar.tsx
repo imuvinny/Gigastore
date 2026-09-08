@@ -13,6 +13,7 @@ interface ProfileSidebarProps {
   cartCount: number;
   onProfileUpdate?: (profile: any) => void;
   onOpenAdmin?: () => void;
+  isAdmin?: boolean;
   onOpenAuth?: () => void;
   wishlist?: Product[];
   toggleWishlist?: (product: Product) => void;
@@ -20,7 +21,7 @@ interface ProfileSidebarProps {
   onProductSelect?: (product: Product) => void;
 }
 
-export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUpdate, onOpenAdmin, onOpenAuth, wishlist = [], toggleWishlist, products = [], onProductSelect }: ProfileSidebarProps) {
+export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUpdate, onOpenAdmin, isAdmin, onOpenAuth, wishlist = [], toggleWishlist, products = [], onProductSelect }: ProfileSidebarProps) {
   const [userEmail, setUserEmail] = useState('');
   const [userName, setUserName] = useState('');
   const [profile, setProfile] = useState<any>(null);
@@ -87,7 +88,7 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
             fetchNotifications();
           }).subscribe();
 
-        const { data } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+        const { data } = await supabase.from('profiles').select('*, is_subadmin').eq('id', currentUser.id).single();
         if (data) {
            setProfile(data);
            setUserName((data.first_name && data.last_name) ? `${data.first_name} ${data.last_name}` : (metaName || 'My Profile'));
@@ -214,7 +215,7 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-black">{userName || 'My Profile'}</h2>
-                {(userEmail?.toLowerCase() === 'vincentlewa6@gmail.com' || profile?.is_subadmin) && (
+                {isAdmin && (
                   <button 
                     onClick={() => {
                       if (onOpenAdmin) onOpenAdmin();
