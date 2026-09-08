@@ -809,7 +809,7 @@ export default function App() {
 
       {/* Admin Panel */}
       <AnimatePresence>
-        {isAdminOpen && user?.email?.toLowerCase() === 'vincentlewa6@gmail.com' && (
+        {isAdminOpen && (user?.email?.toLowerCase() === 'vincentlewa6@gmail.com' || profile?.is_subadmin) && (
           <AdminPanel
             products={productsList}
             setProducts={setProductsList}
@@ -817,6 +817,7 @@ export default function App() {
             setSlides={setSlidesList}
             socialLinks={socialLinks}
             setSocialLinks={setSocialLinks}
+            isMainAdmin={user?.email?.toLowerCase() === 'vincentlewa6@gmail.com'}
             onClose={() => setIsAdminOpen(false)}
           />
         )}

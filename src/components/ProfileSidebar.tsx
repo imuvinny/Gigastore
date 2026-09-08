@@ -214,7 +214,7 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-black">{userName || 'My Profile'}</h2>
-                {userEmail?.toLowerCase() === 'vincentlewa6@gmail.com' && (
+                {(userEmail?.toLowerCase() === 'vincentlewa6@gmail.com' || profile?.is_subadmin) && (
                   <button 
                     onClick={() => {
                       if (onOpenAdmin) onOpenAdmin();

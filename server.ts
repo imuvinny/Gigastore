@@ -662,7 +662,7 @@ app.get("/api/health", (req, res) => {
       
       syncedProductNames.add(name);
           
-          const newProductData = {
+          const newProductData: any = {
             name,
             brand,
             price: basePrice,

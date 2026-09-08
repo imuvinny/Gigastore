@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Database, Image as ImageIcon, Save, Terminal, Upload, 
   LayoutDashboard, Trash2, Menu, LogOut, History, Sparkles, 
-  Search, ArrowUpDown, Filter, Eye, CheckCircle2, AlertCircle, Plus, Settings, Bell, Send 
+  Search, ArrowUpDown, Filter, Eye, CheckCircle2, AlertCircle, Plus, Settings, Bell, Send, User 
 } from 'lucide-react';
 import { Product, Slide, SyncLog, Order } from '../types';
 import { supabase } from '../lib/supabase';
@@ -11,6 +11,8 @@ import { DashboardTab } from './DashboardTab';
 import { AdminNotificationsTab } from './AdminNotificationsTab';
 import { SyncLogModal } from './SyncLogModal';
 import { formatProductZMW } from '../utils';
+
+import { AdminSubAdminsTab } from './AdminSubAdminsTab';
 
 interface AdminPanelProps {
   products: Product[];
@@ -20,10 +22,11 @@ interface AdminPanelProps {
   onClose: () => void;
   socialLinks?: { instagram: string, x: string, facebook: string };
   setSocialLinks?: (links: { instagram: string, x: string, facebook: string }) => void;
+  isMainAdmin?: boolean;
 }
 
-export function AdminPanel({ products, setProducts, slides, setSlides, onClose, socialLinks = {instagram:"", x:"", facebook:""}, setSocialLinks }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'slides' | 'sync_history' | 'settings' | 'notifications'>('dashboard');
+export function AdminPanel({ products, setProducts, slides, setSlides, onClose, socialLinks = {instagram:"", x:"", facebook:""}, setSocialLinks, isMainAdmin = false }: AdminPanelProps) {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'slides' | 'sync_history' | 'settings' | 'notifications' | 'subadmins'>('dashboard');
   const [editingProducts, setEditingProducts] = useState<Product[]>(products);
   const [editingSlides, setEditingSlides] = useState<Slide[]>(slides);
   const [editingSocialLinks, setEditingSocialLinks] = useState(socialLinks);
@@ -362,14 +365,26 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                     >
                       <History size={16} /> Sync Activity Log
                     </button>
-                    <button
-                      onClick={() => { setActiveTab('notifications'); setIsMenuOpen(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 ${
-                        activeTab === 'notifications' ? 'bg-gray-50 text-black font-bold' : 'text-gray-600 hover:bg-gray-50 hover:text-black'
-                      }`}
-                    >
-                      <Bell size={16} /> Notifications
-                    </button>
+                    {isMainAdmin && (
+                      <>
+                        <button
+                          onClick={() => { setActiveTab('notifications'); setIsMenuOpen(false); }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 ${
+                            activeTab === 'notifications' ? 'bg-gray-50 text-black font-bold' : 'text-gray-600 hover:bg-gray-50 hover:text-black'
+                          }`}
+                        >
+                          <Bell size={16} /> Notifications
+                        </button>
+                        <button
+                          onClick={() => { setActiveTab('subadmins'); setIsMenuOpen(false); }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 ${
+                            activeTab === 'subadmins' ? 'bg-gray-50 text-black font-bold' : 'text-gray-600 hover:bg-gray-50 hover:text-black'
+                          }`}
+                        >
+                          <User size={16} /> Manage Sub-Admins
+                        </button>
+                      </>
+                    )}
                     <button
                       onClick={() => { setActiveTab('slides'); setIsMenuOpen(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 ${
@@ -456,7 +471,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                   <div className="text-xs font-bold bg-gray-100 px-3 py-1.5 rounded-xl text-gray-700">
                     Total Sessions: {syncLogs.length}
                   </div>
-                  {syncLogs.length > 0 && (
+                  {syncLogs.length > 0 && isMainAdmin && (
                     <button 
                       onClick={async () => {
                         if (window.confirm('Are you sure you want to delete all sync history logs? This cannot be undone.')) {
@@ -712,13 +727,15 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                               </div>
                             </td>
                             <td className="px-5 py-4 text-center">
-                              <button
-                                onClick={() => handleDeleteProduct(product)}
-                                className="p-2.5 bg-red-50 hover:bg-red-500 text-red-600 hover:text-white rounded-xl transition-colors"
-                                title="Delete product"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                              {isMainAdmin && (
+                                <button
+                                  onClick={() => handleDeleteProduct(product)}
+                                  className="p-2.5 bg-red-50 hover:bg-red-500 text-red-600 hover:text-white rounded-xl transition-colors"
+                                  title="Delete product"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              )}
                             </td>
                           </tr>
                         );
@@ -731,8 +748,12 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
           )}
 
 
-          {activeTab === 'notifications' && (
+          {activeTab === 'notifications' && isMainAdmin && (
             <AdminNotificationsTab />
+          )}
+
+          {activeTab === 'subadmins' && isMainAdmin && (
+            <AdminSubAdminsTab />
           )}
 
           {activeTab === 'settings' && (
@@ -776,33 +797,34 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                 </div>
               </div>
 
-              <div className="bg-red-50 border border-red-100 rounded-3xl p-6 shadow-sm mt-6">
-                <h4 className="font-bold text-md text-red-700 border-b border-red-200 pb-2 mb-4">Danger Zone</h4>
-                <div className="flex flex-col gap-2">
-                   <p className="text-sm text-red-600 mb-3">Resetting dashboard data will permanently delete all Visits, Company Earnings, and Orders from the database. This is useful for starting over in a new year.</p>
-                   <button 
-                     onClick={async () => {
-                        if (window.confirm("Are you absolutely sure you want to delete ALL Visits, Earnings, and Orders? This action cannot be undone.")) {
-                            try {
-                               if (supabase) {
-                                 await supabase.from('visits').delete().gte('created_at', '2000-01-01');
-                                 await supabase.from('company_earnings').delete().gte('created_at', '2000-01-01');
-                                 await supabase.from('orders').delete().gte('created_at', '2000-01-01');
-                                 console.error("Dashboard data has been reset successfully. Please refresh the page to see changes.");
-                               }
-                            } catch (e) {
-                               console.error("Error resetting data. Check console for details.");
-                               console.error(e);
-                            }
-                        }
-                     }}
-                     className="bg-red-600 text-white font-bold px-5 py-3 rounded-xl hover:bg-red-700 transition-colors w-fit shadow-md shadow-red-600/20"
-                   >
-                     Reset Dashboard Data
-                   </button>
+              {isMainAdmin && (
+                <div className="bg-red-50 border border-red-100 rounded-3xl p-6 shadow-sm mt-6">
+                  <h4 className="font-bold text-md text-red-700 border-b border-red-200 pb-2 mb-4">Danger Zone</h4>
+                  <div className="flex flex-col gap-2">
+                     <p className="text-sm text-red-600 mb-3">Resetting dashboard data will permanently delete all Visits, Company Earnings, and Orders from the database. This is useful for starting over in a new year.</p>
+                     <button 
+                       onClick={async () => {
+                          if (window.confirm("Are you absolutely sure you want to delete ALL Visits, Earnings, and Orders? This action cannot be undone.")) {
+                              try {
+                                 if (supabase) {
+                                   await supabase.from('visits').delete().gte('created_at', '2000-01-01');
+                                   await supabase.from('company_earnings').delete().gte('created_at', '2000-01-01');
+                                   await supabase.from('orders').delete().gte('created_at', '2000-01-01');
+                                   alert("Dashboard data has been reset successfully. Please refresh the page to see changes.");
+                                 }
+                              } catch (e) {
+                                 alert("Error resetting data. Check console for details.");
+                                 console.error(e);
+                              }
+                          }
+                       }}
+                       className="bg-red-600 text-white font-bold px-5 py-3 rounded-xl hover:bg-red-700 transition-colors w-fit shadow-md shadow-red-600/20"
+                     >
+                       Reset Dashboard Data
+                     </button>
+                  </div>
                 </div>
-              </div>
-
+              )}
             </div>
           )}
 
@@ -810,36 +832,40 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
             <div className="space-y-6">
               <div className="flex justify-between items-center bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
                 <h3 className="font-bold text-lg">Manage Slides</h3>
-                <button
-                  onClick={() => {
-                    const newId = editingSlides.length > 0 ? Math.max(...editingSlides.map(s => s.id)) + 1 : 1;
-                    setEditingSlides([...editingSlides, {
-                      id: newId,
-                      titleLines: ["NEW", "SLIDE"],
-                      accentText: "NEW PRODUCT DESCRIPTION.",
-                      specs: "New specs here.",
-                      color: "#ffffff",
-                      image: ""
-                    }]);
-                  }}
-                  className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-neutral-800 transition-colors"
-                >
-                  <Plus size={16} /> Add Slide
-                </button>
+                {isMainAdmin && (
+                  <button
+                    onClick={() => {
+                      const newId = editingSlides.length > 0 ? Math.max(...editingSlides.map(s => s.id)) + 1 : 1;
+                      setEditingSlides([...editingSlides, {
+                        id: newId,
+                        titleLines: ["NEW", "SLIDE"],
+                        accentText: "NEW PRODUCT DESCRIPTION.",
+                        specs: "New specs here.",
+                        color: "#ffffff",
+                        image: ""
+                      }]);
+                    }}
+                    className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-neutral-800 transition-colors"
+                  >
+                    <Plus size={16} /> Add Slide
+                  </button>
+                )}
               </div>
 
               {editingSlides.map((slide, index) => (
                 <div key={slide.id} className="bg-white border border-gray-100 rounded-3xl shadow-xl shadow-black/5 overflow-hidden p-6 relative group">
-                  <button
-                    onClick={() => {
-                      const newSlides = editingSlides.filter(s => s.id !== slide.id);
-                      setEditingSlides(newSlides);
-                    }}
-                    className="absolute top-6 right-6 p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
-                    title="Delete Slide"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  {isMainAdmin && (
+                    <button
+                      onClick={() => {
+                        const newSlides = editingSlides.filter(s => s.id !== slide.id);
+                        setEditingSlides(newSlides);
+                      }}
+                      className="absolute top-6 right-6 p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
+                      title="Delete Slide"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
