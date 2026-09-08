@@ -420,15 +420,6 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
           </div>
           
           <div className="flex items-center gap-3">
-            <button 
-              onClick={handleSync}
-              disabled={isSyncing}
-              className="flex items-center gap-2 bg-black text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-neutral-800 transition-colors disabled:opacity-50 shrink-0 shadow-md"
-            >
-              <Database size={14} className={isSyncing ? 'animate-bounce' : ''} /> 
-              <span>{isSyncing ? 'Syncing Plug.tech...' : 'Run Sync Bot'}</span>
-            </button>
-
             {activeTab !== 'dashboard' && activeTab !== 'sync_history' && (
               <button 
                 onClick={handleSave}
@@ -436,6 +427,17 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                 className="flex items-center gap-2 bg-black text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-neutral-800 transition-colors disabled:opacity-50 shrink-0 shadow-md"
               >
                 <Save size={14} /> {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            )}
+
+            {isMainAdmin && (
+              <button 
+                onClick={handleSync}
+                disabled={isSyncing}
+                className="flex items-center gap-2 bg-black text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-neutral-800 transition-colors disabled:opacity-50 shrink-0 shadow-md"
+              >
+                <Database size={14} className={isSyncing ? 'animate-bounce' : ''} /> 
+                <span>{isSyncing ? 'Syncing Plug.tech...' : 'Run Sync Bot'}</span>
               </button>
             )}
 
@@ -661,6 +663,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                                 <span className="text-gray-400 font-bold text-xs mr-1">K</span>
                                 <input
                                   type="number"
+                                  disabled={!isMainAdmin}
                                   value={product.price}
                                   onChange={(e) => {
                                     if (originalIndex !== -1) {
@@ -669,7 +672,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                                       setEditingProducts(newProducts);
                                     }
                                   }}
-                                  className="bg-transparent border-none outline-none w-20 text-xs font-bold text-black"
+                                  className="bg-transparent border-none outline-none w-20 text-xs font-bold text-black disabled:text-gray-500"
                                 />
                               </div>
                             </td>
@@ -679,6 +682,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                                 <input
                                   type="number"
                                   placeholder="Auto"
+                                  disabled={!isMainAdmin}
                                   value={product.manualMarginZMW ?? ''}
                                   onChange={(e) => {
                                     if (originalIndex !== -1) {
@@ -687,7 +691,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                                       setEditingProducts(newProducts);
                                     }
                                   }}
-                                  className="bg-transparent border-none outline-none w-20 text-xs font-bold text-black"
+                                  className="bg-transparent border-none outline-none w-20 text-xs font-bold text-black disabled:text-gray-500"
                                 />
                               </div>
                             </td>
@@ -698,6 +702,7 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                                   <input
                                     type="text"
                                     value={product.image}
+                                    disabled={!isMainAdmin}
                                     onChange={(e) => {
                                       if (originalIndex !== -1) {
                                         const newProducts = [...editingProducts];
@@ -705,11 +710,11 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
                                         setEditingProducts(newProducts);
                                       }
                                     }}
-                                    className="bg-transparent border-none outline-none w-full text-xs text-black font-mono"
+                                    className="bg-transparent border-none outline-none w-full text-xs text-black font-mono disabled:text-gray-500"
                                     placeholder="Paste image URL here..."
                                   />
                                 </div>
-                                {supabase && originalIndex !== -1 && (
+                                {isMainAdmin && supabase && originalIndex !== -1 && (
                                   <button
                                     onClick={() => triggerUpload('product', originalIndex)}
                                     disabled={uploading}
