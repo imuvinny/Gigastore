@@ -7,7 +7,7 @@ async function run() {
   const { data } = await supabase.from('products').select('*').ilike('name', '%Pixel%');
   for (const d of data) {
     if (d.name.includes('Pixel 8a') || d.name.includes('Pixel 9') || d.name.includes('Pixel 10a')) {
-       console.log(`${d.name} | ID: ${d.id} | Price: ${d.price} | Colors:`, typeof d.colors[0] === 'string' && d.colors[0] === '#000000' ? 'Dummy' : 'Real');
+       console.log(`${d.name} | ID: ${d.id} | Price: ${d.price}`);
     }
   }
 }

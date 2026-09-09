@@ -14,7 +14,7 @@ import { ProductDetailsModal } from './components/ProductDetailsModal';
 import { NetworkStatus } from './components/NetworkStatus';
 import { NotFound404 } from './components/NotFound404';
 import { FaXTwitter } from 'react-icons/fa6';
-import { formatZMW, getDisplayPriceUSD, formatProductZMW, getMinConditionPriceFromColors, getEffectiveConditionPrice, isProductAvailable, isAccessoryItem } from './utils';
+import { formatZMW, getDisplayPriceUSD, formatProductZMW, getMinConditionPriceFromColors, getMinAvailableConditionPrice, getEffectiveConditionPrice, isProductAvailable, isAccessoryItem } from './utils';
 
 
 
@@ -347,11 +347,25 @@ export default function App() {
           console.warn("Settings table notice:", errSettings.message || errSettings);
         }
 
-        const { data: dbProducts, error: pError } = await supabase.from('products').select('*');
+        let allDbProducts: any[] = [];
+        let fetchFrom = 0;
+        let pError = null;
+        while (true) {
+          const { data: chunk, error } = await supabase.from('products').select('*').range(fetchFrom, fetchFrom + 999);
+          if (error) {
+            pError = error;
+            break;
+          }
+          if (!chunk || chunk.length === 0) break;
+          allDbProducts.push(...chunk);
+          if (chunk.length < 1000) break;
+          fetchFrom += 1000;
+        }
+
         if (pError) {
           console.warn("Products table notice:", pError.message || pError);
-        } else if (dbProducts && dbProducts.length > 0) {
-          setProductsList(dbProducts.filter((p: any) => !p.name.toLowerCase().includes('airpods max')));
+        } else if (allDbProducts.length > 0) {
+          setProductsList(allDbProducts.filter((p: any) => !p.name.toLowerCase().includes('airpods max')));
         }
 
         const { data: dbOrders } = await supabase.from('orders').select('product_name, quantity').neq('status', 'pending');
@@ -710,7 +724,7 @@ export default function App() {
                        <img src={product.image || undefined} alt={product.name} className="w-[90%] h-[90%] object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-700 ease-out relative z-10" />
                     </div>
                   <h3 onClick={() => setSelectedProduct(product)} className="text-base sm:text-xl font-bold text-white mb-1 sm:mb-2 tracking-tight cursor-pointer hover:text-white/80 transition-colors line-clamp-2 min-h-[3rem] sm:min-h-0 flex items-center justify-center">{product.name}</h3>
-                  <p className="text-neutral-400 font-semibold text-sm sm:text-lg mb-4 sm:mb-8">{formatProductZMW(product, getDisplayPriceUSD(product.price))}</p>
+                  <p className="text-neutral-400 font-semibold text-sm sm:text-lg mb-4 sm:mb-8">{formatProductZMW(product, getDisplayPriceUSD(getMinAvailableConditionPrice(product.colors) ?? product.price))}</p>
                   <button 
                      onClick={(e) => {
                        e.stopPropagation();

@@ -4,6 +4,7 @@ import { Search, Send, Bell, User, CheckCircle2 } from 'lucide-react';
 
 export function AdminNotificationsTab() {
   const [profiles, setProfiles] = useState<any[]>([]);
+  const [totalUsersCount, setTotalUsersCount] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [message, setMessage] = useState('');
@@ -12,10 +13,21 @@ export function AdminNotificationsTab() {
 
   useEffect(() => {
     async function fetchProfiles() {
-      const { data } = await supabase.from('profiles').select('id, email, first_name, last_name, avatar_url').order('created_at', { ascending: false });
-      if (data) {
-        setProfiles(data);
+      // Get total count
+      const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+      if (count !== null) setTotalUsersCount(count);
+
+      // Fetch profiles (paginated to ensure we get all if needed, but for UI we might just fetch all)
+      let allProfiles: any[] = [];
+      let fetchFrom = 0;
+      while (true) {
+        const { data } = await supabase.from('profiles').select('id, email, first_name, last_name, avatar_url').order('created_at', { ascending: false }).range(fetchFrom, fetchFrom + 999);
+        if (!data || data.length === 0) break;
+        allProfiles.push(...data);
+        if (data.length < 1000) break;
+        fetchFrom += 1000;
       }
+      setProfiles(allProfiles);
     }
     fetchProfiles();
   }, []);
@@ -53,6 +65,10 @@ export function AdminNotificationsTab() {
     <div className="space-y-6">
       <div className="flex justify-between items-center bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
         <h3 className="font-bold text-lg flex items-center gap-2"><Bell className="text-black" /> Send Notifications</h3>
+        <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100">
+          <User className="text-gray-500" size={18} />
+          <span className="font-bold text-sm text-black">Total Users: {totalUsersCount}</span>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -60,7 +76,7 @@ export function AdminNotificationsTab() {
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden p-6 flex flex-col h-[600px]">
           <h4 className="font-bold text-md border-b pb-4 mb-4 flex justify-between items-center">
             <span>Select Client</span>
-            <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-semibold">{profiles.length} Users</span>
+            <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-semibold">{profiles.length} Listed</span>
           </h4>
           
           <div className="relative mb-4 shrink-0">

@@ -207,10 +207,18 @@ export function AdminPanel({ products, setProducts, slides, setSlides, onClose, 
         }
         // Fetch fresh products from Supabase
         if (supabase) {
-          const { data: freshProducts } = await supabase.from('products').select('*');
-          if (freshProducts) {
-            setEditingProducts(freshProducts);
-            setProducts(freshProducts);
+          let allFreshProducts: any[] = [];
+          let fetchFrom = 0;
+          while (true) {
+            const { data: chunk } = await supabase.from('products').select('*').range(fetchFrom, fetchFrom + 999);
+            if (!chunk || chunk.length === 0) break;
+            allFreshProducts.push(...chunk);
+            if (chunk.length < 1000) break;
+            fetchFrom += 1000;
+          }
+          if (allFreshProducts.length > 0) {
+            setEditingProducts(allFreshProducts);
+            setProducts(allFreshProducts);
           }
         }
       } else {

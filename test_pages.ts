@@ -1,0 +1,23 @@
+async function test() {
+  let page = 1;
+  while(true) {
+    const response = await fetch(`https://www.plug.tech/products.json?limit=250&page=${page}&currency=ZMW`, { 
+        headers: { 
+          "User-Agent": "Mozilla/5.0", 
+          "Accept": "application/json",
+          "Cookie": "cart_currency=ZMW"
+        } 
+      });
+    const text = await response.text();
+    try {
+        const data = JSON.parse(text);
+        console.log('Page', page, 'items:', data.products?.length);
+        if (!data.products || data.products.length < 250) break;
+        page++;
+    } catch(e) {
+        console.log('Failed to parse on page', page);
+        break;
+    }
+  }
+}
+test();

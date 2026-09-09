@@ -31,6 +31,15 @@ export const isPlugPromoImage = (url: string | undefined | null): boolean => {
     l.includes("unlocked_graphic") ||
     l.includes("unlocked-graphic") ||
     l.includes("factoryunlocked") ||
+    l.includes("unlocked-for-all") ||
+    l.includes("carriers") ||
+    l.includes("gemini") ||
+    l.includes("camera-coach") ||
+    l.includes("camera_coach") ||
+    l.includes("security-satellite") ||
+    l.includes("satellite-sos") ||
+    l.includes("switching-from") ||
+    l.includes("features_") ||
     l.includes("fast-charger") ||
     l.includes("charger-bundle") ||
     l.includes("graphic_") ||
@@ -98,7 +107,7 @@ export const isProductAvailable = (product: import('./types').Product): boolean 
   return available;
 };
 
-export const getMinConditionPriceFromColors = (colors: string[] | undefined): number | null => {
+export const getMinAvailableConditionPrice = (colors: string[] | undefined): number | null => {
   if (!colors || colors.length === 0) return null;
   try {
     const parsed = parseColors(colors);
@@ -117,6 +126,37 @@ export const getMinConditionPriceFromColors = (colors: string[] | undefined): nu
         } else if (st.conditions) {
           st.conditions.forEach(cond => {
             if (cond.available !== false && cond.price != null && (minPrice === null || cond.price < minPrice)) {
+              minPrice = cond.price;
+            }
+          });
+        }
+      });
+    });
+    return minPrice;
+  } catch (e) {
+    return null;
+  }
+};
+
+export const getMinConditionPriceFromColors = (colors: string[] | undefined): number | null => {
+  if (!colors || colors.length === 0) return null;
+  try {
+    const parsed = parseColors(colors);
+    if (parsed.length === 0) return null;
+    let minPrice: number | null = null;
+    parsed.forEach(col => {
+      col.storages?.forEach(st => {
+        if (st.connectivities && st.connectivities.length > 0) {
+          st.connectivities.forEach(conn => {
+            conn.conditions?.forEach(cond => {
+              if (cond.price != null && (minPrice === null || cond.price < minPrice)) {
+                minPrice = cond.price;
+              }
+            });
+          });
+        } else if (st.conditions) {
+          st.conditions.forEach(cond => {
+            if (cond.price != null && (minPrice === null || cond.price < minPrice)) {
               minPrice = cond.price;
             }
           });

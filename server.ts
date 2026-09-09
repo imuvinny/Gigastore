@@ -64,6 +64,15 @@ const isPlugPromoImage = (url: string): boolean => {
     l.includes("unlocked_graphic") ||
     l.includes("unlocked-graphic") ||
     l.includes("factoryunlocked") ||
+    l.includes("unlocked-for-all") ||
+    l.includes("carriers") ||
+    l.includes("gemini") ||
+    l.includes("camera-coach") ||
+    l.includes("camera_coach") ||
+    l.includes("security-satellite") ||
+    l.includes("satellite-sos") ||
+    l.includes("switching-from") ||
+    l.includes("features_") ||
     l.includes("fast-charger") ||
     l.includes("charger-bundle") ||
     l.includes("graphic_") ||
@@ -403,13 +412,15 @@ app.get("/api/health", (req, res) => {
       let page = 1;
       let hasMore = true;
       let retryCount = 0;
+      let fullySynced = true;
+
       while (hasMore) {
         console.log(`Fetching page: ${page}`);
-        const response = await fetch(`https://www.plug.tech/products.json?limit=250&page=${page}&currency=ZMW`, { 
+        const response = await fetch(`https://www.plug.tech/products.json?limit=250&page=${page}&currency=USD`, { 
           headers: { 
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36", 
             "Accept": "application/json",
-            "Cookie": "cart_currency=ZMW"
+            "Cookie": "cart_currency=USD"
           } 
         });
 
@@ -418,6 +429,7 @@ app.get("/api/health", (req, res) => {
           if (retryCount > 3) {
              console.log(`Rate limited on page ${page} too many times. Giving up and proceeding with fetched products.`);
              hasMore = false;
+             fullySynced = false;
              break;
           }
           const waitTime = retryCount * 5000;
@@ -432,10 +444,20 @@ app.get("/api/health", (req, res) => {
         if (!response.ok) {
           console.error(`Failed to fetch page ${page}: ${response.statusText}`);
           hasMore = false;
+          fullySynced = false;
           break;
         }
         
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (err: any) {
+          console.error(`Failed to parse JSON on page ${page}: ${err.message}`);
+          hasMore = false;
+          fullySynced = false;
+          break;
+        }
+        
         const products = data.products;
         const toUpsert: any[] = [];
         
@@ -543,10 +565,12 @@ app.get("/api/health", (req, res) => {
 
       if (item.variants) {
         item.variants.forEach((v: any) => {
-          let rawPlugZmw = typeof v.price === 'number' ? (v.price > 100000 ? v.price / 100 : v.price) : parseFloat(v.price);
+          let usdPrice = typeof v.price === 'number' ? (v.price > 10000 ? v.price / 100 : v.price) : parseFloat(v.price);
+          // 20.638586 is the exact multiplier to match original approved prices (419.99 * 20.638586 = 8668)
+          let rawPlugZmw = usdPrice * 20.638586;
           const margin = getProfitMarginZMW({ name: name, brand, price: rawPlugZmw });
           let vPrice = Math.round(rawPlugZmw) + margin; // Plug ZMW price + exact profit margin
-          if (vPrice < basePrice && v.available !== false) basePrice = vPrice;
+          if (vPrice < basePrice) basePrice = vPrice;
           
           let color = null;
           let storage = null;
@@ -698,9 +722,19 @@ app.get("/api/health", (req, res) => {
       }
       
       // Clean up products no longer listed in active sync
-      const { data: allProducts, error: fetchAllError } = await supabase.from('products').select('id, name, brand, image');
+      let allProducts: any[] = [];
+      let fetchExFromCleanup = 0;
+      let fetchAllError = null;
+      while (true) {
+        const { data: exChunk, error } = await supabase.from('products').select('id, name, brand, image').range(fetchExFromCleanup, fetchExFromCleanup + 999);
+        if (error) { fetchAllError = error; break; }
+        if (!exChunk || exChunk.length === 0) break;
+        allProducts.push(...exChunk);
+        if (exChunk.length < 1000) break;
+        fetchExFromCleanup += 1000;
+      }
       
-      if (!fetchAllError && allProducts && syncedProductNames.size > 10) {
+      if (fullySynced && !fetchAllError && allProducts.length > 0 && syncedProductNames.size > 10) {
         const toDelete = allProducts.filter((p: any) => !syncedProductNames.has(p.name));
         if (toDelete.length > 0) {
           const ids = toDelete.map((p: any) => p.id);
