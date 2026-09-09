@@ -416,11 +416,11 @@ app.get("/api/health", (req, res) => {
 
       while (hasMore) {
         console.log(`Fetching page: ${page}`);
-        const response = await fetch(`https://www.plug.tech/products.json?limit=250&page=${page}&currency=USD`, { 
+        const response = await fetch(`https://www.plug.tech/products.json?limit=250&page=${page}&currency=ZMW`, { 
           headers: { 
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36", 
             "Accept": "application/json",
-            "Cookie": "cart_currency=USD"
+            "Cookie": "cart_currency=ZMW"
           } 
         });
 
@@ -565,9 +565,7 @@ app.get("/api/health", (req, res) => {
 
       if (item.variants) {
         item.variants.forEach((v: any) => {
-          let usdPrice = typeof v.price === 'number' ? (v.price > 10000 ? v.price / 100 : v.price) : parseFloat(v.price);
-          // 20.638586 is the exact multiplier to match original approved prices (419.99 * 20.638586 = 8668)
-          let rawPlugZmw = usdPrice * 20.638586;
+          let rawPlugZmw = typeof v.price === 'number' ? (v.price > 100000 ? v.price / 100 : v.price) : parseFloat(v.price);
           const margin = getProfitMarginZMW({ name: name, brand, price: rawPlugZmw });
           let vPrice = Math.round(rawPlugZmw) + margin; // Plug ZMW price + exact profit margin
           if (vPrice < basePrice) basePrice = vPrice;
