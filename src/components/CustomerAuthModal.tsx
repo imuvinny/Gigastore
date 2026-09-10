@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ArrowRight, Check, MailCheck, UserCheck } from 'lucide-react';
+import { X, ArrowRight, Check, MailCheck, UserCheck, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface CustomerAuthModalProps {
@@ -25,6 +25,7 @@ export function CustomerAuthModal({ onClose, onSuccess, onAdminLogin, onTermsCli
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [newsOptIn, setNewsOptIn] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,9 +113,33 @@ export function CustomerAuthModal({ onClose, onSuccess, onAdminLogin, onTermsCli
       
       // Check if email verification is required
       if (data.user && data.user.identities && data.user.identities.length === 0) {
-          setError("User already exists");
-          setIsLoading(false);
-          return;
+          // Check if they actually exist in our public.users table
+          const { data: existingUser } = await supabase.from('users').select('id').eq('email', email).maybeSingle();
+          if (existingUser) {
+              setError("User already exists");
+              setIsLoading(false);
+              return;
+          } else {
+              // Exists in auth but not DB. Try signing in directly.
+              const { error: signInError, data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+              if (signInError) {
+                  setError("Account exists. Please sign in or use 'Forgot Password'.");
+                  setIsLoading(false);
+                  return;
+              }
+              // If sign in succeeds, recreate their profile in the database
+              if (signInData.user) {
+                  await supabase.from('users').upsert({
+                      id: signInData.user.id,
+                      email: email,
+                      first_name: firstName,
+                      last_name: lastName,
+                      phone_number: phone
+                  });
+                  onSuccess();
+                  return;
+              }
+          }
       }
 
       setStep('VERIFY_EMAIL');
@@ -153,13 +178,20 @@ export function CustomerAuthModal({ onClose, onSuccess, onAdminLogin, onTermsCli
         
         <div className="relative">
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-black placeholder-gray-400 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
+            className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-black placeholder-gray-400 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all pr-12"
             placeholder="Password"
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
         </div>
 
         {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
@@ -256,15 +288,24 @@ export function CustomerAuthModal({ onClose, onSuccess, onAdminLogin, onTermsCli
           required
         />
         
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-black placeholder-gray-400 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
-          placeholder="Password"
-          required
-          minLength={6}
-        />
+        <div className="relative w-full">
+          <input
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-black placeholder-gray-400 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all pr-12"
+            placeholder="Password"
+            required
+            minLength={6}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
 
         {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
 

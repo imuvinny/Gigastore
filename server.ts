@@ -396,7 +396,7 @@ app.get("/api/health", (req, res) => {
           if (price >= 900 && price < 1000) return 250;
           return 400; // >= 1000
         }
-        if (n.includes('macbook') || n.includes('laptop') || n.includes('pc') || c.includes('macbook') || c.includes('laptop')) return 2000;
+        if (n.includes('macbook') || n.includes('laptop') || n.includes('pc') || c.includes('macbook') || c.includes('laptop')) return 1000;
         if (n.includes('ipad') || n.includes('tablet') || n.includes('galaxy tab') || c.includes('ipad') || c.includes('tablet')) return 500;
         if (n.includes('speaker') || n.includes('pill') || n.includes('flip') || c.includes('speaker')) return 400;
         if (n.includes('watch') || c.includes('watch')) return 300;

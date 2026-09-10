@@ -38,6 +38,7 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
       return [];
     }
   });
+  const [showImageModal, setShowImageModal] = useState(false);
 
   const handleHideNotification = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -194,7 +195,12 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
             <div className="relative group">
               <div className="w-12 h-12 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-black overflow-hidden relative">
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url || undefined} alt="Profile" className="w-full h-full object-cover" />
+                  <img 
+                    src={profile.avatar_url || undefined} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" 
+                    onClick={() => setShowImageModal(true)}
+                  />
                 ) : getInitials() ? (
                   <span className="text-sm font-bold text-gray-600">{getInitials()}</span>
                 ) : (
@@ -488,6 +494,35 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
                 )}
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showImageModal && profile?.avatar_url && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md cursor-zoom-out"
+            onClick={() => setShowImageModal(false)}
+          >
+            <button
+              onClick={() => setShowImageModal(false)}
+              className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors p-2"
+            >
+              <X size={24} />
+            </button>
+            <motion.img
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              src={profile.avatar_url}
+              alt="Profile HD"
+              className="w-auto h-auto max-w-[90vw] max-h-[90vh] object-contain rounded-full shadow-2xl cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            />
           </motion.div>
         )}
       </AnimatePresence>
