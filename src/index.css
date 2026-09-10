@@ -5,7 +5,9 @@
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
 }
 
-body {
+html, body {
+  background-color: #050505;
+  color: #F2F2F2;
   overflow-x: hidden;
 }
 
