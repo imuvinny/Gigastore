@@ -98,6 +98,14 @@ export function CustomerAuthModal({ onClose, onSuccess, onAdminLogin, onTermsCli
     setError('');
 
     try {
+      // 1. Check if phone number already exists
+      const { data: existingPhone } = await supabase.from('profiles').select('id').eq('phone_number', phone).maybeSingle();
+      if (existingPhone) {
+        setError("This phone number already exists.");
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -111,25 +119,25 @@ export function CustomerAuthModal({ onClose, onSuccess, onAdminLogin, onTermsCli
       });
       if (signUpError) throw signUpError;
       
-      // Check if email verification is required
+      // Check if email verification is required or user already exists
       if (data.user && data.user.identities && data.user.identities.length === 0) {
-          // Check if they actually exist in our public.users table
-          const { data: existingUser } = await supabase.from('users').select('id').eq('email', email).maybeSingle();
+          // Check if they actually exist in our public.profiles table
+          const { data: existingUser } = await supabase.from('profiles').select('id').eq('email', email).maybeSingle();
           if (existingUser) {
-              setError("User already exists");
+              setError("User with this email already exist. Please sign in.");
               setIsLoading(false);
               return;
           } else {
-              // Exists in auth but not DB. Try signing in directly.
+              // Exists in auth but not DB. Try signing in directly to recreate profile.
               const { error: signInError, data: signInData } = await supabase.auth.signInWithPassword({ email, password });
               if (signInError) {
-                  setError("Account exists. Please sign in or use 'Forgot Password'.");
+                  setError("This email is registered but missing a profile. Please sign in with your original password to restore it.");
                   setIsLoading(false);
                   return;
               }
               // If sign in succeeds, recreate their profile in the database
               if (signInData.user) {
-                  await supabase.from('users').upsert({
+                  await supabase.from('profiles').upsert({
                       id: signInData.user.id,
                       email: email,
                       first_name: firstName,
@@ -273,7 +281,8 @@ export function CustomerAuthModal({ onClose, onSuccess, onAdminLogin, onTermsCli
         <input
           type="tel"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+          maxLength={10}
           className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-black placeholder-gray-400 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
           placeholder="Phone Number"
           required
