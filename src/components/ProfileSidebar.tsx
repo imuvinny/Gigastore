@@ -46,9 +46,9 @@ export function ProfileSidebar({ user, onClose, onLogout, cartCount, onProfileUp
     if (!supportMessage.trim() || !userEmail) return;
     setIsSendingSupport(true);
     try {
-      const { error } = await supabase.from('notifications').insert({
+      const { error } = await supabase.from('support_tickets').insert({
         customer_email: userEmail,
-        message: `[Support Ticket] ${supportMessage}`,
+        message: supportMessage,
         read: false
       });
       if (!error) {

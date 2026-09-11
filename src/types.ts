@@ -119,3 +119,11 @@ export interface Notification {
   message: string;
   read: boolean;
 }
+
+export interface SupportTicket {
+  id: string;
+  created_at: string;
+  customer_email: string;
+  message: string;
+  read: boolean;
+}
