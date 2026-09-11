@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Database, Image as ImageIcon, Save, Terminal, Upload, 
   LayoutDashboard, Trash2, Menu, LogOut, History, Sparkles, 
-  Search, ArrowUpDown, Filter, Eye, CheckCircle2, AlertCircle, Plus, Settings, Bell, Send, User 
+  Search, ArrowUpDown, Filter, Eye, CheckCircle2, AlertCircle, Plus, Settings, Bell, Send, User, MessageSquare
 } from 'lucide-react';
 import { Product, Slide, SyncLog, Order } from '../types';
 import { supabase } from '../lib/supabase';
